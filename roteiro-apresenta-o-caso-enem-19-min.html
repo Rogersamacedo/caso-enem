@@ -1,0 +1,189 @@
+
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Roteiro — Caso ENEM</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.6; }
+  header { background: linear-gradient(135deg, #1a56db, #7e3af2); padding: 32px 40px; }
+  header h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
+  header p  { color: #c7d2fe; font-size: 0.95rem; margin-top: 6px; }
+  .badge { display: inline-block; background: rgba(255,255,255,0.2); color: #fff; border-radius: 20px; padding: 3px 12px; font-size: 0.8rem; margin-top: 10px; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 24px; }
+  .bloco { background: #1e2130; border-radius: 12px; margin-bottom: 20px; overflow: hidden; border: 1px solid #2d3148; }
+  .bloco-header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: #252840; border-bottom: 1px solid #2d3148; }
+  .bloco-header .num { background: #1a56db; color: #fff; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; flex-shrink: 0; }
+  .bloco-header .titulo { font-weight: 600; font-size: 1rem; color: #a5b4fc; }
+  .bloco-header .tempo { margin-left: auto; background: #312e81; color: #c7d2fe; border-radius: 20px; padding: 2px 10px; font-size: 0.78rem; white-space: nowrap; }
+  .bloco-body { padding: 18px 20px; }
+  .fala { background: #2a2d40; border-left: 3px solid #7e3af2; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; font-size: 0.93rem; color: #e2e8f0; }
+  .fala span.label { display: block; font-size: 0.72rem; font-weight: 700; color: #a5b4fc; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .cmd { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px 14px; font-family: 'Courier New', monospace; font-size: 0.88rem; color: #79c0ff; margin-bottom: 12px; }
+  .cmd::before { content: '$ '; color: #3fb950; }
+  .pergunta { background: #1a2e1a; border-left: 3px solid #3fb950; border-radius: 6px; padding: 10px 14px; font-size: 0.88rem; color: #aff5b4; margin-bottom: 8px; }
+  .pergunta span.label { display: block; font-size: 0.72rem; font-weight: 700; color: #3fb950; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .aviso { background: #2d1f00; border-left: 3px solid #e3b341; border-radius: 6px; padding: 10px 14px; font-size: 0.88rem; color: #e3b341; margin-bottom: 12px; }
+  .aviso::before { content: '⚠ '; }
+  .dica { background: #0d2137; border-left: 3px solid #1a56db; border-radius: 6px; padding: 10px 14px; font-size: 0.88rem; color: #93c5fd; margin-bottom: 12px; }
+  .dica::before { content: '💡 '; }
+  .timeline { display: flex; gap: 8px; flex-wrap: wrap; padding: 16px 20px; border-top: 1px solid #2d3148; }
+  .t-item { background: #252840; border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; color: #94a3b8; }
+  .t-item strong { color: #a5b4fc; }
+  footer { text-align: center; color: #475569; font-size: 0.8rem; padding: 24px; border-top: 1px solid #2d3148; margin-top: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎓 Roteiro de Apresentação — Caso ENEM</h1>
+  <p>Trilha 4: Agente Especialista — Consultor Estratégico Educacional</p>
+  <span class="badge">⏱ 19 minutos</span>
+</header>
+
+<main>
+
+  
+  <div class="bloco">
+    <div class="bloco-header">
+      <div class="num">1</div>
+      <div class="titulo">Contexto e Problema de Negócio</div>
+      <div class="tempo">0–3 min</div>
+    </div>
+    <div class="bloco-body">
+      <div class="fala">
+        <span class="label">Fala</span>
+        "Imaginem um gestor que quer abrir uma nova escola no Brasil. Ele tem uma pergunta crítica: <strong>onde investir primeiro — em Professores ou em Tutores?</strong> Professores entregam conteúdo de qualidade. Tutores entregam suporte emocional e metodológico — essenciais onde a estrutura em casa é frágil. A resposta certa depende do perfil socioeconômico da região. E é exatamente isso que o nosso agente resolve."
+      </div>
+      <div class="dica">O dataset usado é oficial do INEP — microdados do ENEM 2025 com 4,8 milhões de participantes. Para esta demo usamos uma amostra de 100 mil registros, que já cobre mais de 1.800 municípios brasileiros.</div>
+    </div>
+    <div class="timeline">
+      <div class="t-item"><strong>Meta:</strong> engajar a audiência com o problema real</div>
+      <div class="t-item"><strong>Não abrir</strong> o terminal ainda</div>
+    </div>
+  </div>
+
+  
+  <div class="bloco">
+    <div class="bloco-header">
+      <div class="num">2</div>
+      <div class="titulo">Arquitetura da Solução</div>
+      <div class="tempo">3–6 min</div>
+    </div>
+    <div class="bloco-body">
+      <div class="fala">
+        <span class="label">Fala</span>
+        "A solução tem três camadas. Primeiro, o <strong>analise.py</strong> faz o ETL dos microdados: lê as variáveis de renda, internet e escolaridade dos pais, e calcula um score de vulnerabilidade de 0 a 100 por município. Segundo, esse score alimenta o <strong>agente.py</strong>, que usa o IBM watsonx.ai com o modelo Mistral para gerar uma recomendação em linguagem natural. Terceiro, o <strong>main.py</strong> orquestra tudo com uma interface de linha de comando — incluindo um modo interativo onde vocês podem fazer perguntas livres ao agente."
+      </div>
+      <div class="dica">Mostre rapidamente os 5 arquivos no VS Code: config.py → analise.py → agente.py → main.py. Não precisa explicar o código — só mostrar que existe estrutura.</div>
+    </div>
+    <div class="timeline">
+      <div class="t-item"><strong>Meta:</strong> mostrar que há engenharia real por trás</div>
+      <div class="t-item"><strong>Abrir</strong> o VS Code rapidamente</div>
+    </div>
+  </div>
+
+  
+  <div class="bloco">
+    <div class="bloco-header">
+      <div class="num">3</div>
+      <div class="titulo">Demo ao Vivo — Ranking de Vulnerabilidade</div>
+      <div class="tempo">6–9 min</div>
+    </div>
+    <div class="bloco-body">
+      <div class="fala">
+        <span class="label">Fala</span>
+        "Vamos ver os dados. Primeiro o ranking — sem chamar a IA, só o processamento dos microdados."
+      </div>
+      <div class="cmd">python3 main.py --amostra 100000</div>
+      <div class="fala">
+        <span class="label">Após o resultado aparecer — fala</span>
+        "Olhem o top 10 de alta vulnerabilidade — municípios do Nordeste e Norte com score próximo de 100. E no extremo oposto, cidades do interior de SP e Sul com score próximo de zero. Essa diferença já responde parcialmente a pergunta: no primeiro grupo, tutores. No segundo, professores. Mas vamos além — vamos pedir a recomendação estratégica completa com justificativa."
+      </div>
+    </div>
+    <div class="timeline">
+      <div class="t-item"><strong>Meta:</strong> mostrar o poder dos dados brutos</div>
+      <div class="t-item"><strong>Aguardar</strong> ~20s para processar</div>
+    </div>
+  </div>
+
+  
+  <div class="bloco">
+    <div class="bloco-header">
+      <div class="num">4</div>
+      <div class="titulo">Demo ao Vivo — Agente Consultor Interativo</div>
+      <div class="tempo">9–16 min</div>
+    </div>
+    <div class="bloco-body">
+      <div class="fala">
+        <span class="label">Fala</span>
+        "Agora o modo interativo. Escolhi Salvador porque tem perfil médio — o caso mais desafiador para um gestor decidir."
+      </div>
+      <div class="cmd">python3 main.py --amostra 100000 --municipio "Salvador" --interativo</div>
+      <div class="aviso">Aguarde a análise inicial aparecer (~30s). O agente vai gerar os 4 blocos: Diagnóstico, Recomendação, Justificativa e Ações.</div>
+      <div class="fala">
+        <span class="label">Após a análise inicial — fala</span>
+        "O agente gerou a recomendação. Mas agora vem o diferencial — podemos conversar com ele. Os parceiros podem fazer perguntas."
+      </div>
+
+      <div class="pergunta">
+        <span class="label">Pergunta sugerida 1 — você</span>
+        Qual seria o perfil ideal do tutor para esse município?
+      </div>
+      <div class="pergunta">
+        <span class="label">Pergunta sugerida 2 — convidar parceiro</span>
+        E se o gestor tiver orçamento para apenas 2 contratações, qual a prioridade?
+      </div>
+      <div class="pergunta">
+        <span class="label">Pergunta sugerida 3 — convidar outro parceiro</span>
+        Como a escolaridade dos pais muda a estratégia em relação ao acesso à internet?
+      </div>
+      <div class="dica">Se alguém tentar perguntar algo fora do escopo (ex: "me conta uma piada"), o guardrail vai bloquear automaticamente com uma mensagem elegante. Pode deixar acontecer — é um ponto forte da demo!</div>
+    </div>
+    <div class="timeline">
+      <div class="t-item"><strong>Meta:</strong> mostrar o agente em conversa real</div>
+      <div class="t-item"><strong>Engajar</strong> os parceiros nas perguntas</div>
+      <div class="t-item">Digite <strong>sair</strong> para encerrar</div>
+    </div>
+  </div>
+
+  
+  <div class="bloco">
+    <div class="bloco-header">
+      <div class="num">5</div>
+      <div class="titulo">Encerramento e Conclusão</div>
+      <div class="tempo">16–19 min</div>
+    </div>
+    <div class="bloco-body">
+      <div class="fala">
+        <span class="label">Fala final</span>
+        "O que entregamos foi um agente que transforma dados brutos do ENEM em decisão estratégica acionável. O gestor não precisa saber interpretar microdados — ele só pergunta, e o agente responde com base em evidências reais de 100 mil participantes. A resposta para Professor vs. Tutor não é universal — ela depende do contexto socioeconômico de cada município. E agora temos uma ferramenta que calcula isso de forma automática e explica o raciocínio."
+      </div>
+      <div class="dica">Se sobrar tempo: mostre um município de perfil ALTO (ex: "Uiramutã") e um de perfil BAIXO (ex: "Campinas") para contrastar as recomendações.</div>
+    </div>
+    <div class="timeline">
+      <div class="t-item"><strong>Meta:</strong> fechar com impacto</div>
+      <div class="t-item"><strong>Não abrir</strong> código nesta etapa</div>
+    </div>
+  </div>
+
+  
+  <div class="bloco">
+    <div class="bloco-header">
+      <div class="num">★</div>
+      <div class="titulo">Comandos de Referência Rápida</div>
+      <div class="tempo">Colinha</div>
+    </div>
+    <div class="bloco-body">
+      <div class="cmd">python3 main.py --amostra 100000</div>
+      <div class="cmd">python3 main.py --amostra 100000 --municipio "Salvador" --interativo</div>
+      <div class="cmd">python3 main.py --amostra 100000 --municipio "Recife" --interativo</div>
+      <div class="cmd">python3 main.py --amostra 100000 --municipio "Campinas" --interativo</div>
+      <div class="aviso">Se der 429: o agente tenta automaticamente a cada 15-60s por até 10 vezes. Aproveite para explicar a arquitetura enquanto aguarda.</div>
+    </div>
+  </div>
+
+</main>
+<footer>Caso ENEM — Trilha 4: Agente Especialista · IBM watsonx.ai · Mistral 24B</footer>
+</body>
+</html>
