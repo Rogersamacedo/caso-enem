@@ -1,0 +1,22 @@
+# =============================================================
+# INSTRUÇÕES: Renomeie este arquivo para .gitignore
+# =============================================================
+
+# Credenciais — nunca versionar
+.env
+
+# Dados brutos do ENEM (arquivos grandes)
+*.csv
+*.CSV
+dados/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/

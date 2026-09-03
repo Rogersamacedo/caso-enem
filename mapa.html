@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de Vulnerabilidade — Caso ENEM</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #0b0f1a; color: #e2e8f0; min-height: 100vh; }
+
+header {
+  background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%);
+  padding: 22px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+}
+header h1 { font-size: 1.35rem; font-weight: 800; color: #fff; }
+header p  { color: #c5cae9; font-size: 0.85rem; margin-top: 3px; }
+.nav-btn {
+  background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px; padding: 8px 18px; font-size: 0.85rem; cursor: pointer; text-decoration: none;
+  transition: background 0.2s;
+}
+.nav-btn:hover { background: rgba(255,255,255,0.25); }
+
+.legenda {
+  display: flex; align-items: center; gap: 24px; padding: 18px 40px;
+  background: #0f1520; border-bottom: 1px solid #1e2540; flex-wrap: wrap;
+}
+.leg-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #94a3b8; }
+.leg-cor { width: 22px; height: 14px; border-radius: 4px; }
+.leg-titulo { font-size: 0.9rem; font-weight: 700; color: #a5b4fc; margin-right: 8px; }
+
+.container { display: flex; gap: 0; height: calc(100vh - 130px); }
+
+.mapa-wrap { flex: 1; position: relative; overflow: hidden; }
+svg#brasil { width: 100%; height: 100%; }
+.estado {
+  stroke: #1e2540; stroke-width: 1.5; cursor: pointer;
+  transition: opacity 0.15s, stroke-width 0.15s;
+}
+.estado:hover { opacity: 0.85; stroke-width: 2.5; stroke: #fff; }
+
+.tooltip {
+  position: fixed; background: #1e2540; border: 1px solid #3b4270;
+  border-radius: 10px; padding: 14px 18px; font-size: 0.85rem;
+  pointer-events: none; display: none; z-index: 1000; min-width: 220px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.tooltip h3 { font-size: 1rem; font-weight: 800; margin-bottom: 8px; }
+.tooltip .row { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 4px; color: #94a3b8; }
+.tooltip .row span:last-child { font-weight: 700; color: #e2e8f0; }
+.tooltip .rec { margin-top: 10px; text-align: center; border-radius: 6px; padding: 6px; font-weight: 800; font-size: 0.9rem; }
+.rec-tutor  { background: #2e1065; color: #d8b4fe; }
+.rec-prof   { background: #0c4a6e; color: #7dd3fc; }
+.rec-combo  { background: #1c1917; color: #fdba74; }
+
+.painel {
+  width: 300px; background: #0f1520; border-left: 1px solid #1e2540;
+  overflow-y: auto; padding: 0;
+}
+.painel-header { padding: 16px 20px; background: #141828; border-bottom: 1px solid #1e2540; }
+.painel-header h2 { font-size: 0.95rem; font-weight: 700; color: #a5b4fc; }
+.uf-item {
+  padding: 12px 20px; border-bottom: 1px solid #1a1f35; cursor: pointer;
+  display: flex; align-items: center; gap: 12px; transition: background 0.15s;
+}
+.uf-item:hover { background: #1a1f35; }
+.uf-item .sigla { font-weight: 800; font-size: 0.95rem; width: 32px; color: #e2e8f0; }
+.uf-item .info  { flex: 1; }
+.uf-item .nome  { font-size: 0.8rem; color: #64748b; }
+.uf-item .score { font-size: 0.82rem; font-weight: 700; }
+.barra-mini { height: 4px; border-radius: 2px; margin-top: 4px; }
+.pill-mini { font-size: 0.68rem; font-weight: 700; border-radius: 10px; padding: 1px 8px; }
+
+@media(max-width:700px) {
+  .container { flex-direction: column; height: auto; }
+  .painel { width: 100%; height: 300px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🗺️ Mapa de Vulnerabilidade Socioeconômica — ENEM 2025</h1>
+    <p>Score por UF · Passe o mouse para detalhes · Clique para fixar</p>
+  </div>
+  <a href="index.html" class="nav-btn">← Voltar ao Menu</a>
+</header>
+
+<div class="legenda">
+  <span class="leg-titulo">Score de Vulnerabilidade:</span>
+  <div class="leg-item"><div class="leg-cor" style="background:#b91c1c"></div> Alto ≥ 65 → Tutor</div>
+  <div class="leg-item"><div class="leg-cor" style="background:#c2410c"></div> Médio-Alto 50–64</div>
+  <div class="leg-item"><div class="leg-cor" style="background:#d97706"></div> Médio 36–49</div>
+  <div class="leg-item"><div class="leg-cor" style="background:#15803d"></div> Baixo-Médio 36–45</div>
+  <div class="leg-item"><div class="leg-cor" style="background:#1d4ed8"></div> Baixo ≤ 35 → Professor</div>
+</div>
+
+<div class="container">
+  <div class="mapa-wrap">
+    <svg id="brasil" viewBox="0 0 800 900" xmlns="http://www.w3.org/2000/svg">
+      <!-- Estados do Brasil — paths simplificados por UF -->
+      <g id="estados"></g>
+    </svg>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+  <div class="painel">
+    <div class="painel-header"><h2>📋 Ranking por UF (score ↓)</h2></div>
+    <div id="lista-ufs"></div>
+  </div>
+</div>
+
+<script>
+const dados = [
+  {"uf":"AC","score":58.9,"municipios":16,"pct_renda":71.6,"pct_internet":30.5,"pct_escol":58.2,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"AL","score":52.7,"municipios":27,"pct_renda":60.9,"pct_internet":17.8,"pct_escol":63.8,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"AM","score":67.9,"municipios":60,"pct_renda":75.9,"pct_internet":48.4,"pct_escol":66.3,"recomendacao":"TUTOR"},
+  {"uf":"AP","score":53.1,"municipios":11,"pct_renda":64.2,"pct_internet":21.1,"pct_escol":51.2,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"BA","score":56.3,"municipios":175,"pct_renda":68.8,"pct_internet":17.5,"pct_escol":67.2,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"CE","score":54.8,"municipios":120,"pct_renda":68.3,"pct_internet":16.9,"pct_escol":64.3,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"DF","score":26.3,"municipios":1,"pct_renda":22.7,"pct_internet":4.9,"pct_escol":39.5,"recomendacao":"PROFESSOR"},
+  {"uf":"ES","score":37.4,"municipios":38,"pct_renda":33.5,"pct_internet":6.2,"pct_escol":61.8,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"GO","score":39.5,"municipios":62,"pct_renda":38.1,"pct_internet":10.2,"pct_escol":58.0,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"MA","score":58.6,"municipios":80,"pct_renda":70.2,"pct_internet":23.6,"pct_escol":66.5,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"MG","score":37.9,"municipios":192,"pct_renda":34.5,"pct_internet":8.5,"pct_escol":58.3,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"MS","score":35.5,"municipios":41,"pct_renda":32.4,"pct_internet":8.2,"pct_escol":54.5,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"MT","score":34.4,"municipios":57,"pct_renda":28.6,"pct_internet":8.2,"pct_escol":52.1,"recomendacao":"PROFESSOR"},
+  {"uf":"PA","score":57.7,"municipios":89,"pct_renda":64.0,"pct_internet":27.9,"pct_escol":66.9,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"PB","score":55.2,"municipios":55,"pct_renda":65.4,"pct_internet":16.0,"pct_escol":70.8,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"PE","score":53.6,"municipios":83,"pct_renda":65.6,"pct_internet":12.3,"pct_escol":67.1,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"PI","score":59.7,"municipios":41,"pct_renda":74.1,"pct_internet":22.3,"pct_escol":67.1,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"PR","score":28.7,"municipios":89,"pct_renda":18.6,"pct_internet":3.7,"pct_escol":53.0,"recomendacao":"PROFESSOR"},
+  {"uf":"RJ","score":35.6,"municipios":53,"pct_renda":32.3,"pct_internet":6.3,"pct_escol":55.1,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"RN","score":51.5,"municipios":41,"pct_renda":61.2,"pct_internet":8.9,"pct_escol":70.3,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"RO","score":37.2,"municipios":25,"pct_renda":35.3,"pct_internet":5.1,"pct_escol":57.6,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"RR","score":57.4,"municipios":9,"pct_renda":64.6,"pct_internet":35.1,"pct_escol":59.6,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"RS","score":31.7,"municipios":107,"pct_renda":22.0,"pct_internet":4.8,"pct_escol":58.6,"recomendacao":"PROFESSOR"},
+  {"uf":"SC","score":24.6,"municipios":56,"pct_renda":12.7,"pct_internet":1.7,"pct_escol":47.8,"recomendacao":"PROFESSOR"},
+  {"uf":"SE","score":58.4,"municipios":33,"pct_renda":67.2,"pct_internet":26.0,"pct_escol":67.5,"recomendacao":"COMBINAÇÃO"},
+  {"uf":"SP","score":27.9,"municipios":210,"pct_renda":18.2,"pct_internet":4.2,"pct_escol":50.7,"recomendacao":"PROFESSOR"},
+  {"uf":"TO","score":46.4,"municipios":30,"pct_renda":52.2,"pct_internet":16.8,"pct_escol":54.0,"recomendacao":"COMBINAÇÃO"}
+];
+
+const nomes = {
+  AC:"Acre",AL:"Alagoas",AM:"Amazonas",AP:"Amapá",BA:"Bahia",CE:"Ceará",
+  DF:"Distrito Federal",ES:"Espírito Santo",GO:"Goiás",MA:"Maranhão",
+  MG:"Minas Gerais",MS:"Mato Grosso do Sul",MT:"Mato Grosso",PA:"Pará",
+  PB:"Paraíba",PE:"Pernambuco",PI:"Piauí",PR:"Paraná",RJ:"Rio de Janeiro",
+  RN:"Rio Grande do Norte",RO:"Rondônia",RR:"Roraima",RS:"Rio Grande do Sul",
+  SC:"Santa Catarina",SE:"Sergipe",SP:"São Paulo",TO:"Tocantins"
+};
+
+function scoreColor(s) {
+  if (s >= 65) return '#b91c1c';
+  if (s >= 55) return '#c2410c';
+  if (s >= 45) return '#d97706';
+  if (s >= 36) return '#4d7c0f';
+  return '#1d4ed8';
+}
+
+// Posições aproximadas dos estados no SVG (cx, cy, largura, altura)
+const posUF = {
+  AM: [200,200,160,160], PA: [370,210,150,150], RR: [220,100,80,80],
+  AP: [410,120,60,70],   MA: [460,230,90,90],   PI: [510,270,70,80],
+  CE: [560,240,70,70],   RN: [610,250,55,55],   PB: [600,275,55,45],
+  PE: [580,300,80,55],   AL: [620,320,45,40],   SE: [605,340,40,40],
+  BA: [530,360,130,130], TO: [420,320,80,90],   GO: [390,420,90,90],
+  DF: [420,430,25,25],   MG: [480,430,110,100], ES: [575,430,45,55],
+  RJ: [540,500,60,50],   SP: [430,490,110,80],  MS: [350,490,90,80],
+  MT: [310,370,110,120], RO: [235,360,80,80],   AC: [165,340,75,60],
+  PR: [400,555,95,60],   SC: [410,600,80,50],   RS: [390,650,100,80]
+};
+
+// Gera retângulos arredondados como representação dos estados
+const svg = document.getElementById('estados');
+const dadosMap = {};
+dados.forEach(d => dadosMap[d.uf] = d);
+
+dados.sort((a,b)=>b.score-a.score).forEach(d => {
+  const pos = posUF[d.uf];
+  if (!pos) return;
+  const [cx,cy,w,h] = pos;
+  const cor = scoreColor(d.score);
+
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+
+  const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  rect.setAttribute('x', cx - w/2);
+  rect.setAttribute('y', cy - h/2);
+  rect.setAttribute('width', w);
+  rect.setAttribute('height', h);
+  rect.setAttribute('rx', 10);
+  rect.setAttribute('fill', cor);
+  rect.setAttribute('class','estado');
+
+  const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+  label.setAttribute('x', cx);
+  label.setAttribute('y', cy - 4);
+  label.setAttribute('text-anchor','middle');
+  label.setAttribute('fill','#fff');
+  label.setAttribute('font-size', w > 70 ? '14' : '11');
+  label.setAttribute('font-weight','bold');
+  label.setAttribute('pointer-events','none');
+  label.textContent = d.uf;
+
+  const score = document.createElementNS('http://www.w3.org/2000/svg','text');
+  score.setAttribute('x', cx);
+  score.setAttribute('y', cy + 14);
+  score.setAttribute('text-anchor','middle');
+  score.setAttribute('fill','rgba(255,255,255,0.85)');
+  score.setAttribute('font-size', w > 70 ? '12' : '10');
+  score.setAttribute('pointer-events','none');
+  score.textContent = d.score;
+
+  g.appendChild(rect);
+  g.appendChild(label);
+  g.appendChild(score);
+
+  // Eventos
+  g.addEventListener('mousemove', e => mostrarTooltip(e, d));
+  g.addEventListener('mouseleave', esconderTooltip);
+  g.addEventListener('click', () => fixarInfo(d));
+
+  svg.appendChild(g);
+});
+
+// Tooltip
+const tooltip = document.getElementById('tooltip');
+function mostrarTooltip(e, d) {
+  const rec = d.recomendacao;
+  const recClass = rec==='TUTOR'?'rec-tutor':rec==='PROFESSOR'?'rec-prof':'rec-combo';
+  tooltip.innerHTML = `
+    <h3>${nomes[d.uf] || d.uf} (${d.uf})</h3>
+    <div class="row"><span>Score vulnerabilidade</span><span>${d.score}/100</span></div>
+    <div class="row"><span>Municípios analisados</span><span>${d.municipios}</span></div>
+    <div class="row"><span>Renda baixa</span><span>${d.pct_renda}%</span></div>
+    <div class="row"><span>Sem internet</span><span>${d.pct_internet}%</span></div>
+    <div class="row"><span>Pais s/ Ensino Médio</span><span>${d.pct_escol}%</span></div>
+    <div class="rec ${recClass}">→ ${rec}</div>
+  `;
+  tooltip.style.display = 'block';
+  tooltip.style.left = Math.min(e.clientX + 16, window.innerWidth - 260) + 'px';
+  tooltip.style.top  = Math.min(e.clientY + 16, window.innerHeight - 220) + 'px';
+}
+function esconderTooltip() { tooltip.style.display = 'none'; }
+
+// Painel lateral
+const lista = document.getElementById('lista-ufs');
+dados.sort((a,b)=>b.score-a.score).forEach(d => {
+  const cor = scoreColor(d.score);
+  const rec = d.recomendacao;
+  const recClass = rec==='TUTOR'?'rec-tutor':rec==='PROFESSOR'?'rec-prof':'rec-combo';
+  const div = document.createElement('div');
+  div.className = 'uf-item';
+  div.innerHTML = `
+    <div class="sigla">${d.uf}</div>
+    <div class="info">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:0.8rem;color:#94a3b8">${nomes[d.uf]||d.uf}</span>
+        <span class="pill-mini ${recClass}">${rec}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:3px">
+        <span class="score" style="color:${cor}">${d.score}/100</span>
+        <span style="font-size:0.75rem;color:#475569">${d.municipios} mun.</span>
+      </div>
+      <div class="barra-mini" style="background:${cor};width:${d.score}%"></div>
+    </div>
+  `;
+  div.addEventListener('click', () => fixarInfo(d));
+  lista.appendChild(div);
+});
+
+// Info fixada ao clicar
+function fixarInfo(d) {
+  const rec = d.recomendacao;
+  const recClass = rec==='TUTOR'?'rec-tutor':rec==='PROFESSOR'?'rec-prof':'rec-combo';
+  tooltip.innerHTML = `
+    <h3>📍 ${nomes[d.uf]||d.uf} (${d.uf})</h3>
+    <div class="row"><span>Score vulnerabilidade</span><span>${d.score}/100</span></div>
+    <div class="row"><span>Municípios</span><span>${d.municipios}</span></div>
+    <div class="row"><span>Renda baixa</span><span>${d.pct_renda}%</span></div>
+    <div class="row"><span>Sem internet</span><span>${d.pct_internet}%</span></div>
+    <div class="row"><span>Pais s/ EM</span><span>${d.pct_escol}%</span></div>
+    <div class="rec ${recClass}">→ ${rec}</div>
+    <div style="font-size:0.72rem;color:#475569;margin-top:8px;text-align:center">Clique em outro estado para trocar</div>
+  `;
+  tooltip.style.display = 'block';
+  tooltip.style.left = '50%';
+  tooltip.style.top  = '40%';
+  tooltip.style.transform = 'translate(-50%,-50%)';
+}
+</script>
+</body>
+</html>

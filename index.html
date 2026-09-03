@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caso ENEM — Menu Principal</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #0b0f1a;
+  color: #e2e8f0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.hero { text-align: center; margin-bottom: 56px; }
+.hero .emoji { font-size: 4rem; margin-bottom: 16px; }
+.hero h1 { font-size: 2rem; font-weight: 900; background: linear-gradient(135deg,#60a5fa,#a78bfa,#f472b6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom: 10px; }
+.hero p { color: #64748b; font-size: 0.95rem; max-width: 500px; margin: 0 auto; line-height: 1.7; }
+.hero .badges { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.badge { background: #1e2540; border: 1px solid #2d3560; border-radius: 20px; padding: 4px 14px; font-size: 0.78rem; color: #94a3b8; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 900px; width: 100%; }
+
+.card {
+  background: #141828;
+  border: 1px solid #1e2540;
+  border-radius: 16px;
+  padding: 32px 28px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  display: block;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+.card.azul:hover  { border-color: #3b82f6; box-shadow: 0 12px 40px rgba(59,130,246,0.15); }
+.card.roxo:hover  { border-color: #7c3aed; box-shadow: 0 12px 40px rgba(124,58,237,0.15); }
+.card.verde:hover { border-color: #10b981; box-shadow: 0 12px 40px rgba(16,185,129,0.15); }
+
+.card .icone { font-size: 2.5rem; margin-bottom: 16px; }
+.card h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 8px; color: #e2e8f0; }
+.card p  { font-size: 0.85rem; color: #64748b; line-height: 1.7; margin-bottom: 20px; }
+.card .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { background: #1e2540; border-radius: 6px; padding: 3px 10px; font-size: 0.72rem; color: #94a3b8; }
+.card.azul  .tag { background: #0c2a4e; color: #60a5fa; }
+.card.roxo  .tag { background: #1e0a40; color: #a78bfa; }
+.card.verde .tag { background: #022c1e; color: #34d399; }
+
+.card .arrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.82rem; font-weight: 700; margin-top: 16px;
+  opacity: 0; transition: opacity 0.2s;
+}
+.card:hover .arrow { opacity: 1; }
+.card.azul  .arrow { color: #60a5fa; }
+.card.roxo  .arrow { color: #a78bfa; }
+.card.verde .arrow { color: #34d399; }
+
+.terminal {
+  margin-top: 48px; background: #0d1117; border: 1px solid #30363d;
+  border-radius: 12px; padding: 20px 24px; max-width: 700px; width: 100%;
+}
+.terminal .bar { display: flex; gap: 6px; margin-bottom: 14px; }
+.terminal .dot { width: 12px; height: 12px; border-radius: 50%; }
+.terminal p { font-family: 'Courier New', monospace; font-size: 0.82rem; color: #8b949e; line-height: 1.9; }
+.terminal .cmd { color: #79c0ff; }
+.terminal .comment { color: #3fb950; }
+
+footer { margin-top: 56px; color: #334155; font-size: 0.78rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="emoji">🎓</div>
+  <h1>Caso ENEM — Trilha 4</h1>
+  <p>Agente Consultor Estratégico Educacional · IBM watsonx.ai<br>
+  Onde investir: <strong style="-webkit-text-fill-color:#c084fc">Professores</strong> ou <strong style="-webkit-text-fill-color:#60a5fa">Tutores</strong>?</p>
+  <div class="badges">
+    <span class="badge">📊 100.000 participantes</span>
+    <span class="badge">🏙️ 1.801 municípios</span>
+    <span class="badge">🤖 Mistral-24B via watsonx.ai</span>
+    <span class="badge">📅 ENEM 2025</span>
+  </div>
+</div>
+
+<div class="cards">
+  <a href="dashboard.html" class="card azul">
+    <div class="icone">📊</div>
+    <h2>Dashboard Estratégico</h2>
+    <p>Rankings de vulnerabilidade, distribuição por perfil, indicadores socioeconômicos e comparativo entre municípios.</p>
+    <div class="tags">
+      <span class="tag">Gráficos</span>
+      <span class="tag">Rankings</span>
+      <span class="tag">Tabelas</span>
+      <span class="tag">KPIs</span>
+    </div>
+    <div class="arrow">Abrir Dashboard →</div>
+  </a>
+
+  <a href="mapa.html" class="card roxo">
+    <div class="icone">🗺️</div>
+    <h2>Mapa de Calor do Brasil</h2>
+    <p>Visualização geográfica do score de vulnerabilidade por UF. Passe o mouse para ver indicadores detalhados.</p>
+    <div class="tags">
+      <span class="tag">Mapa Interativo</span>
+      <span class="tag">Por UF</span>
+      <span class="tag">Hover</span>
+    </div>
+    <div class="arrow">Abrir Mapa →</div>
+  </a>
+
+  <div class="card verde" style="cursor:default">
+    <div class="icone">🤖</div>
+    <h2>Agente Interativo</h2>
+    <p>Converse com o agente pelo terminal. Faça perguntas livres sobre estratégia educacional para qualquer município.</p>
+    <div class="tags">
+      <span class="tag">Terminal</span>
+      <span class="tag">watsonx.ai</span>
+      <span class="tag">Chat</span>
+    </div>
+    <div style="margin-top:16px;font-family:'Courier New',monospace;font-size:0.78rem;color:#34d399;background:#022c1e;padding:8px 12px;border-radius:6px">
+      python3 main.py --amostra 100000<br>--municipio "Salvador" --interativo
+    </div>
+  </div>
+</div>
+
+<div class="terminal">
+  <div class="bar">
+    <div class="dot" style="background:#ff5f57"></div>
+    <div class="dot" style="background:#febc2e"></div>
+    <div class="dot" style="background:#28c840"></div>
+  </div>
+  <p>
+    <span class="comment"># Ranking geral (sem agente)</span><br>
+    <span class="cmd">python3 main.py --amostra 100000</span><br><br>
+    <span class="comment"># Recomendação única</span><br>
+    <span class="cmd">python3 main.py --amostra 100000 --municipio "Recife"</span><br><br>
+    <span class="comment"># Modo interativo para apresentação</span><br>
+    <span class="cmd">python3 main.py --amostra 100000 --municipio "Salvador" --interativo</span>
+  </p>
+</div>
+
+<footer>Fonte: Microdados ENEM 2025 — INEP · IBM watsonx.ai · Caso Prático Trilha 4</footer>
+
+</body>
+</html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caso ENEM — Dashboard Estratégico</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0b0f1a; color: #e2e8f0; }
+
+  header {
+    background: linear-gradient(135deg, #1a237e 0%, #4a148c 100%);
+    padding: 28px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  header h1 { font-size: 1.5rem; font-weight: 800; color: #fff; }
+  header p  { color: #c5cae9; font-size: 0.88rem; margin-top: 4px; }
+  .badge-header { background: rgba(255,255,255,0.15); color: #fff; border-radius: 20px; padding: 4px 14px; font-size: 0.8rem; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; padding: 28px 32px 0; }
+  .kpi { background: #141828; border: 1px solid #1e2540; border-radius: 12px; padding: 20px; text-align: center; }
+  .kpi .val { font-size: 2rem; font-weight: 800; }
+  .kpi .lbl { font-size: 0.78rem; color: #94a3b8; margin-top: 4px; }
+  .kpi.azul .val      { color: #60a5fa; }
+  .kpi.verde .val     { color: #34d399; }
+  .kpi.roxo .val      { color: #a78bfa; }
+  .kpi.laranja .val   { color: #fb923c; }
+  .kpi.vermelho .val  { color: #f87171; }
+
+  .story {
+    background: #0f1520; border-left: 4px solid #7c3aed;
+    margin: 24px 32px 0; border-radius: 0 10px 10px 0;
+    padding: 16px 20px; font-size: 0.93rem; color: #c4b5fd; line-height: 1.7;
+  }
+  .story strong { color: #ddd6fe; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 24px 32px 0; }
+  @media(max-width:900px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .card { background: #141828; border: 1px solid #1e2540; border-radius: 12px; overflow: hidden; }
+  .card-title {
+    padding: 14px 18px; font-size: 0.88rem; font-weight: 700;
+    color: #a5b4fc; background: #0f1520; border-bottom: 1px solid #1e2540;
+  }
+  .card-body { padding: 16px 18px; }
+  .chart      { width: 100%; height: 280px; }
+  .chart-tall { width: 100%; height: 340px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th {
+    text-align: left; color: #64748b; font-weight: 600;
+    padding: 8px 10px; border-bottom: 1px solid #1e2540;
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  td { padding: 9px 10px; border-bottom: 1px solid #1a1f35; color: #cbd5e1; }
+  tr:hover td { background: #1a1f35; }
+
+  .pill { display: inline-block; border-radius: 20px; padding: 2px 10px; font-size: 0.73rem; font-weight: 700; }
+  .pill.alto      { background: #450a0a; color: #fca5a5; }
+  .pill.medio     { background: #451a03; color: #fdba74; }
+  .pill.baixo     { background: #052e16; color: #86efac; }
+  .pill.tutor     { background: #2e1065; color: #d8b4fe; }
+  .pill.professor { background: #0c4a6e; color: #7dd3fc; }
+  .pill.combo     { background: #1c1917; color: #d6d3d1; }
+
+  .decisao { display: flex; gap: 16px; padding: 20px 32px 0; flex-wrap: wrap; }
+  .dec-card { flex: 1; min-width: 280px; border-radius: 12px; padding: 22px; border: 1px solid; }
+  .dec-tutor { background: #1a0533; border-color: #7c3aed; }
+  .dec-prof  { background: #0c1a2e; border-color: #1d4ed8; }
+  .dec-card h3 { font-size: 1rem; font-weight: 800; margin-bottom: 10px; }
+  .dec-tutor h3 { color: #c084fc; }
+  .dec-prof h3  { color: #60a5fa; }
+  .dec-card ul  { padding-left: 18px; font-size: 0.85rem; color: #cbd5e1; line-height: 1.8; }
+
+  .full { padding: 24px 32px 0; }
+  .pb { padding-bottom: 32px; }
+
+  footer {
+    text-align: center; color: #334155; font-size: 0.78rem;
+    padding: 28px; margin-top: 32px; border-top: 1px solid #1e2540;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div>
+    <h1>&#127891; Caso ENEM &mdash; Consultor Estrat&eacute;gico</h1>
+    <p>Trilha 4: Agente Especialista &middot; IBM watsonx.ai &middot; Microdados ENEM 2025</p>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <span class="badge-header">&#128202; 100.000 participantes &middot; 1.801 munic&iacute;pios</span>
+    <a href="index.html" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:8px 18px;font-size:0.85rem;text-decoration:none">&#8592; Menu</a>
+    <a href="mapa.html"  style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:8px 18px;font-size:0.85rem;text-decoration:none">&#128507; Mapa</a>
+  </div>
+</header>
+
+<!-- KPIs -->
+<div class="kpis">
+  <div class="kpi azul">
+    <div class="val">1.801</div>
+    <div class="lbl">Munic&iacute;pios analisados</div>
+  </div>
+  <div class="kpi laranja">
+    <div class="val">44,3</div>
+    <div class="lbl">Score m&eacute;dio nacional</div>
+  </div>
+  <div class="kpi vermelho">
+    <div class="val">46,1%</div>
+    <div class="lbl">Alunos com renda baixa</div>
+  </div>
+  <div class="kpi roxo">
+    <div class="val">60,2%</div>
+    <div class="lbl">Pais sem Ensino M&eacute;dio</div>
+  </div>
+  <div class="kpi verde">
+    <div class="val">13,3%</div>
+    <div class="lbl">Sem internet em casa</div>
+  </div>
+</div>
+
+<!-- STORYTELLING -->
+<div class="story">
+  <strong>&#128214; A pergunta de neg&oacute;cio:</strong> Um gestor quer abrir uma nova institui&ccedil;&atilde;o de ensino.
+  Deve contratar <strong>Professores</strong> (especialistas em conte&uacute;do, ideais onde os alunos t&ecirc;m estrutura e apoio familiar)
+  ou <strong>Tutores</strong> (suporte emocional e metodol&oacute;gico, essenciais onde a vulnerabilidade socioecon&ocirc;mica &eacute; alta)?
+  A resposta depende do munic&iacute;pio &mdash; e os dados do ENEM revelam isso com precis&atilde;o.
+</div>
+
+<!-- DECISÃO -->
+<div class="decisao">
+  <div class="dec-card dec-tutor">
+    <h3>&#129489;&#8205;&#127979; Quando investir em TUTORES</h3>
+    <ul>
+      <li>Score de vulnerabilidade <strong>&ge; 65</strong></li>
+      <li>Renda familiar baixa (&lt; 1 sal&aacute;rio m&iacute;nimo)</li>
+      <li>Pais sem Ensino M&eacute;dio completo</li>
+      <li>Falta de internet em casa</li>
+      <li>Regi&otilde;es: Norte e Nordeste</li>
+    </ul>
+  </div>
+  <div class="dec-card dec-prof">
+    <h3>&#128218; Quando investir em PROFESSORES</h3>
+    <ul>
+      <li>Score de vulnerabilidade <strong>&le; 35</strong></li>
+      <li>Renda familiar adequada</li>
+      <li>Pais com ensino superior ou m&eacute;dio completo</li>
+      <li>Internet dispon&iacute;vel em casa</li>
+      <li>Regi&otilde;es: Sul e interior de SP/MG</li>
+    </ul>
+  </div>
+</div>
+
+<!-- LINHA 1: UF + Pizza -->
+<div class="grid2">
+  <div class="card">
+    <div class="card-title">&#128507; Score m&eacute;dio por UF &mdash; Top 15 mais vulner&aacute;veis</div>
+    <div class="card-body"><div id="chartUF" class="chart-tall"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#129379; Distribui&ccedil;&atilde;o dos munic&iacute;pios por perfil</div>
+    <div class="card-body"><div id="chartPizza" class="chart-tall"></div></div>
+  </div>
+</div>
+
+<!-- LINHA 2: Indicadores -->
+<div class="full">
+  <div class="card">
+    <div class="card-title">&#128202; Top 10 munic&iacute;pios &mdash; Indicadores de vulnerabilidade (%)</div>
+    <div class="card-body"><div id="chartIndicadores" class="chart"></div></div>
+  </div>
+</div>
+
+<!-- TABELAS -->
+<div class="grid2">
+  <div class="card">
+    <div class="card-title">&#128308; Top 10 &mdash; Maior vulnerabilidade &rarr; TUTOR</div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>Munic&iacute;pio</th><th>UF</th><th>Score</th><th>Perfil</th><th>Rec.</th></tr></thead>
+        <tbody id="tabelaAlta"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128994; Top 10 &mdash; Menor vulnerabilidade &rarr; PROFESSOR</div>
+    <div class="card-body">
+      <table>
+        <thead><tr><th>Munic&iacute;pio</th><th>UF</th><th>Score</th><th>Perfil</th><th>Rec.</th></tr></thead>
+        <tbody id="tabelaBaixa"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- COMPARATIVO -->
+<div class="full pb">
+  <div class="card">
+    <div class="card-title">&#9878;&#65039; Comparativo: Alta vs. Baixa vulnerabilidade &mdash; Indicadores m&eacute;dios (%)</div>
+    <div class="card-body"><div id="chartComparativo" class="chart"></div></div>
+  </div>
+</div>
+
+<footer>
+  Fonte: Microdados ENEM 2025 &mdash; INEP &middot; Amostra: 100.000 participantes &middot;
+  Agente: IBM watsonx.ai / Mistral-24B
+</footer>
+
+<script>
+const topAlta = [
+  {"municipio":"Indiaroba","uf":"SE","score":100.0,"perfil":"Alto","renda":100.0,"internet":100.0,"escol":100.0},
+  {"municipio":"Cairu","uf":"BA","score":100.0,"perfil":"Alto","renda":100.0,"internet":100.0,"escol":100.0},
+  {"municipio":"Uiramut\u00e3","uf":"RR","score":95.0,"perfil":"Alto","renda":100.0,"internet":100.0,"escol":66.7},
+  {"municipio":"Cavalcante","uf":"GO","score":92.5,"perfil":"Alto","renda":100.0,"internet":75.0,"escol":100.0},
+  {"municipio":"Novo Aripuan\u00e3","uf":"AM","score":88.8,"perfil":"Alto","renda":100.0,"internet":75.0,"escol":87.5},
+  {"municipio":"Tonantins","uf":"AM","score":88.2,"perfil":"Alto","renda":100.0,"internet":71.4,"escol":78.6},
+  {"municipio":"Viseu","uf":"PA","score":85.7,"perfil":"Alto","renda":86.7,"internet":73.3,"escol":93.3},
+  {"municipio":"Itatira","uf":"CE","score":85.0,"perfil":"Alto","renda":100.0,"internet":50.0,"escol":100.0},
+  {"municipio":"Silves","uf":"AM","score":85.0,"perfil":"Alto","renda":100.0,"internet":50.0,"escol":100.0},
+  {"municipio":"Japur\u00e1","uf":"AM","score":85.0,"perfil":"Alto","renda":100.0,"internet":83.3,"escol":66.7}
+];
+const topBaixa = [
+  {"municipio":"Santa F\u00e9 do Sul","uf":"SP","score":16.7,"perfil":"Baixo","renda":16.7,"internet":0.0,"escol":16.7},
+  {"municipio":"Monte Si\u00e3o","uf":"MG","score":16.4,"perfil":"Baixo","renda":0.0,"internet":0.0,"escol":27.3},
+  {"municipio":"Bom Despacho","uf":"MG","score":16.4,"perfil":"Baixo","renda":0.0,"internet":0.0,"escol":36.4},
+  {"municipio":"Jundia\u00ed","uf":"SP","score":16.0,"perfil":"Baixo","renda":4.2,"internet":3.0,"escol":30.4},
+  {"municipio":"Fernando de Noronha","uf":"PE","score":15.0,"perfil":"Baixo","renda":0.0,"internet":0.0,"escol":0.0},
+  {"municipio":"Mateus Leme","uf":"MG","score":15.0,"perfil":"Baixo","renda":0.0,"internet":0.0,"escol":40.0},
+  {"municipio":"Esp\u00edrito Santo do Pinhal","uf":"SP","score":13.8,"perfil":"Baixo","renda":0.0,"internet":0.0,"escol":25.0},
+  {"municipio":"Garibaldi","uf":"RS","score":13.5,"perfil":"Baixo","renda":0.0,"internet":0.0,"escol":40.0},
+  {"municipio":"Guapimirim","uf":"RJ","score":12.5,"perfil":"Baixo","renda":0.0,"internet":0.0,"escol":16.7},
+  {"municipio":"Maravilha","uf":"SC","score":12.4,"perfil":"Baixo","renda":0.0,"internet":0.0,"escol":17.4}
+];
+
+function scoreColor(s){ return s>=65?'#f87171':s<=35?'#34d399':'#fb923c'; }
+function perfilPill(p){ const c=p==='Alto'?'alto':p==='Baixo'?'baixo':'medio'; return `<span class="pill ${c}">${p}</span>`; }
+function recPill(s){ if(s>=65) return '<span class="pill tutor">Tutor</span>'; if(s<=35) return '<span class="pill professor">Professor</span>'; return '<span class="pill combo">Combina\u00e7\u00e3o</span>'; }
+
+function fillTable(id, data){
+  const tb=document.getElementById(id);
+  data.forEach(r=>{
+    tb.innerHTML+=`<tr>
+      <td>${r.municipio}</td><td>${r.uf}</td>
+      <td><b style="color:${scoreColor(r.score)}">${r.score}</b></td>
+      <td>${perfilPill(r.perfil)}</td>
+      <td>${recPill(r.score)}</td>
+    </tr>`;
+  });
+}
+fillTable('tabelaAlta', topAlta);
+fillTable('tabelaBaixa', topBaixa);
+
+// Gráfico UF
+const cUF=echarts.init(document.getElementById('chartUF'));
+cUF.setOption({
+  backgroundColor:'transparent',
+  tooltip:{trigger:'axis',formatter:p=>`${p[0].name}<br/>Score m\u00e9dio: <b>${p[0].value}</b>`},
+  grid:{left:55,right:30,top:10,bottom:30},
+  xAxis:{type:'value',max:100,axisLabel:{color:'#64748b',fontSize:11},splitLine:{lineStyle:{color:'#1e2540'}}},
+  yAxis:{type:'category',data:["TO","RN","AL","AP","PE","CE","PB","BA","RR","PA","SE","MA","AC","PI","AM"],
+    axisLabel:{color:'#94a3b8',fontSize:12},axisLine:{lineStyle:{color:'#1e2540'}}},
+  series:[{type:'bar',data:[46.4,51.5,52.7,53.1,53.6,54.8,55.2,56.3,57.4,57.7,58.4,58.6,58.9,59.7,67.9],
+    itemStyle:{color:p=>p.value>=65?'#f87171':p.value<=35?'#34d399':'#fb923c',borderRadius:[0,4,4,0]},
+    label:{show:true,position:'right',color:'#94a3b8',fontSize:11,formatter:'{c}'}}]
+});
+
+// Pizza
+const cPizza=echarts.init(document.getElementById('chartPizza'));
+cPizza.setOption({
+  backgroundColor:'transparent',
+  tooltip:{trigger:'item',formatter:'{b}: {c} ({d}%)'},
+  legend:{bottom:10,textStyle:{color:'#94a3b8',fontSize:12}},
+  series:[{type:'pie',radius:['40%','70%'],center:['50%','45%'],
+    data:[
+      {value:175, name:'Alto \u2192 Tutor',       itemStyle:{color:'#f87171'}},
+      {value:988, name:'M\u00e9dio \u2192 Combina\u00e7\u00e3o',itemStyle:{color:'#fb923c'}},
+      {value:638, name:'Baixo \u2192 Professor',   itemStyle:{color:'#34d399'}}
+    ],
+    label:{color:'#e2e8f0',fontSize:12},
+    emphasis:{itemStyle:{shadowBlur:10,shadowColor:'rgba(0,0,0,0.5)'}}
+  }]
+});
+
+// Indicadores
+const cInd=echarts.init(document.getElementById('chartIndicadores'));
+cInd.setOption({
+  backgroundColor:'transparent',
+  tooltip:{trigger:'axis'},
+  legend:{textStyle:{color:'#94a3b8',fontSize:11},top:0},
+  grid:{left:120,right:20,top:40,bottom:30},
+  xAxis:{type:'value',max:100,axisLabel:{color:'#64748b',fontSize:11},splitLine:{lineStyle:{color:'#1e2540'}}},
+  yAxis:{type:'category',data:topAlta.map(r=>r.municipio).reverse(),axisLabel:{color:'#94a3b8',fontSize:11}},
+  series:[
+    {name:'Renda Baixa %',  type:'bar',data:topAlta.map(r=>r.renda).reverse(),   itemStyle:{color:'#f87171',borderRadius:[0,3,3,0]}},
+    {name:'Sem Internet %', type:'bar',data:topAlta.map(r=>r.internet).reverse(), itemStyle:{color:'#fb923c',borderRadius:[0,3,3,0]}},
+    {name:'Pais s/ EM %',   type:'bar',data:topAlta.map(r=>r.escol).reverse(),   itemStyle:{color:'#a78bfa',borderRadius:[0,3,3,0]}}
+  ]
+});
+
+// Comparativo
+const cComp=echarts.init(document.getElementById('chartComparativo'));
+const avg=(arr,k)=>(arr.reduce((s,r)=>s+r[k],0)/arr.length).toFixed(1);
+cComp.setOption({
+  backgroundColor:'transparent',
+  tooltip:{trigger:'axis'},
+  legend:{textStyle:{color:'#94a3b8',fontSize:12},top:0},
+  grid:{left:40,right:40,top:50,bottom:30},
+  xAxis:{type:'category',data:['Renda Baixa (%)','Sem Internet (%)','Pais s/ Ensino M\u00e9dio (%)'],
+    axisLabel:{color:'#94a3b8',fontSize:12}},
+  yAxis:{type:'value',max:100,axisLabel:{color:'#64748b'},splitLine:{lineStyle:{color:'#1e2540'}}},
+  series:[
+    {name:'Alta Vulnerab. \u2192 TUTOR', type:'bar',barWidth:'30%',
+      data:[+avg(topAlta,'renda'),+avg(topAlta,'internet'),+avg(topAlta,'escol')],
+      itemStyle:{color:'#f87171',borderRadius:[4,4,0,0]},
+      label:{show:true,position:'top',color:'#f87171',fontSize:13,fontWeight:'bold',formatter:'{c}%'}},
+    {name:'Baixa Vulnerab. \u2192 PROFESSOR', type:'bar',barWidth:'30%',
+      data:[+avg(topBaixa,'renda'),+avg(topBaixa,'internet'),+avg(topBaixa,'escol')],
+      itemStyle:{color:'#34d399',borderRadius:[4,4,0,0]},
+      label:{show:true,position:'top',color:'#34d399',fontSize:13,fontWeight:'bold',formatter:'{c}%'}}
+  ]
+});
+
+window.addEventListener('resize',()=>{cUF.resize();cPizza.resize();cInd.resize();cComp.resize();});
+</script>
+</body>
+</html>
