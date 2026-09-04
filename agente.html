@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agente Consultor — Caso ENEM</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0b0f1a;
+  --surface:   #141828;
+  --border:    #1e2540;
+  --border2:   #2d3560;
+  --text:      #e2e8f0;
+  --muted:     #64748b;
+  --green:     #10b981;
+  --green-dim: #022c1e;
+  --blue:      #60a5fa;
+  --blue-dim:  #0c2a4e;
+  --purple:    #a78bfa;
+  --purple-dim:#1e0a40;
+  --yellow:    #fbbf24;
+  --red:       #f87171;
+  --mono:      'Courier New', 'Lucida Console', monospace;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0 0 80px;
+}
+
+/* ─── Navbar ─── */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 40px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(11,15,26,.85);
+  backdrop-filter: blur(6px);
+  position: sticky; top: 0; z-index: 100;
+}
+nav .logo { font-weight: 900; font-size: 1rem; letter-spacing: .02em;
+  background: linear-gradient(135deg,#60a5fa,#a78bfa,#f472b6);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+nav a { color: var(--muted); font-size: .85rem; text-decoration: none; transition: color .2s; }
+nav a:hover { color: var(--text); }
+nav .back { display: flex; align-items: center; gap: 6px; }
+
+/* ─── Hero ─── */
+.hero {
+  text-align: center;
+  padding: 64px 20px 48px;
+}
+.hero .badge-top {
+  display: inline-block;
+  background: var(--green-dim); border: 1px solid #064e3b;
+  color: var(--green); font-size: .76rem; font-weight: 700;
+  padding: 4px 14px; border-radius: 20px; margin-bottom: 20px;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.hero h1 {
+  font-size: 2.4rem; font-weight: 900; line-height: 1.2; margin-bottom: 14px;
+  background: linear-gradient(135deg,#60a5fa,#a78bfa,#f472b6);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero p { color: var(--muted); font-size: .97rem; max-width: 560px; margin: 0 auto; line-height: 1.8; }
+
+/* ─── Layout central ─── */
+.container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+.section { margin-bottom: 48px; }
+.section-title {
+  font-size: .72rem; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title::after { content:''; flex: 1; height: 1px; background: var(--border); }
+
+/* ─── Cards de decisão ─── */
+.decisao-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+}
+@media (max-width: 600px) { .decisao-grid { grid-template-columns: 1fr; } }
+
+.decisao-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px 24px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.decisao-card.prof:hover { border-color: var(--purple); box-shadow: 0 8px 32px rgba(167,139,250,.1); }
+.decisao-card.tutor:hover{ border-color: var(--blue);   box-shadow: 0 8px 32px rgba(96,165,250,.1);  }
+
+.decisao-card .dc-icon { font-size: 2.2rem; margin-bottom: 14px; }
+.decisao-card h3 { font-size: 1rem; font-weight: 800; margin-bottom: 8px; }
+.decisao-card.prof h3 { color: var(--purple); }
+.decisao-card.tutor h3 { color: var(--blue); }
+.decisao-card p { font-size: .84rem; color: var(--muted); line-height: 1.75; }
+.decisao-card .trigger {
+  margin-top: 16px; padding: 10px 14px;
+  background: var(--bg); border-radius: 8px;
+  font-size: .78rem; color: var(--muted);
+}
+.decisao-card .trigger strong { display: block; font-size: .72rem; text-transform: uppercase;
+  letter-spacing: .08em; margin-bottom: 4px; }
+.decisao-card.prof .trigger strong { color: var(--purple); }
+.decisao-card.tutor .trigger strong { color: var(--blue); }
+
+/* ─── Terminal ─── */
+.terminal-wrap {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.term-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 18px; background: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+.term-bar .dots { display: flex; gap: 6px; }
+.term-bar .dot { width: 12px; height: 12px; border-radius: 50%; }
+.term-bar .title { font-size: .78rem; color: #6e7681; margin-left: auto; margin-right: auto; font-family: var(--mono); }
+
+.term-body {
+  padding: 20px 24px;
+  font-family: var(--mono);
+  font-size: .82rem;
+  line-height: 1.9;
+  color: #8b949e;
+  min-height: 200px;
+}
+.term-body .prompt  { color: var(--green); }
+.term-body .cmd     { color: #79c0ff; }
+.term-body .comment { color: #3fb950; opacity: .75; }
+.term-body .output  { color: #c9d1d9; }
+.term-body .warn    { color: var(--yellow); }
+.term-body .ok      { color: var(--green); }
+.term-body .err     { color: var(--red); }
+.term-body .dim     { color: #484f58; }
+.term-body .blink   { animation: blink 1s step-end infinite; }
+@keyframes blink { 50%{opacity:0;} }
+
+/* ─── Blocos de comando copiável ─── */
+.cmd-block {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.cmd-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.cmd-label { font-size: .74rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--muted); }
+.copy-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--border); border: none; border-radius: 6px;
+  padding: 4px 12px; color: var(--muted); font-size: .74rem;
+  cursor: pointer; transition: background .15s, color .15s; font-family: inherit;
+}
+.copy-btn:hover { background: var(--border2); color: var(--text); }
+.copy-btn.copied { background: var(--green-dim); color: var(--green); }
+.cmd-code {
+  padding: 14px 18px; font-family: var(--mono);
+  font-size: .83rem; color: #79c0ff; line-height: 1.8;
+  white-space: pre; overflow-x: auto;
+}
+
+/* ─── Pipeline visual ─── */
+.pipeline {
+  display: flex; align-items: center; gap: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px 24px; overflow-x: auto;
+  flex-wrap: wrap; gap: 8px; justify-content: center;
+}
+.pipe-step {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 16px 20px; min-width: 120px;
+  text-align: center;
+}
+.pipe-step .ps-icon { font-size: 1.6rem; margin-bottom: 8px; }
+.pipe-step .ps-name { font-size: .78rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.pipe-step .ps-file { font-size: .7rem; color: var(--muted); font-family: var(--mono); }
+.pipe-arrow { font-size: 1.2rem; color: var(--border2); flex-shrink: 0; padding: 0 4px; align-self: center; }
+
+/* ─── Model card ─── */
+.model-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 24px 28px;
+  display: grid; grid-template-columns: auto 1fr; gap: 20px;
+  align-items: center;
+}
+@media (max-width: 600px) { .model-card { grid-template-columns: 1fr; } }
+.model-badge {
+  background: linear-gradient(135deg,#1e2540,#2d1b69);
+  border: 1px solid #4c1d95; border-radius: 10px;
+  padding: 14px 20px; text-align: center; min-width: 130px;
+}
+.model-badge .mb-logo { font-size: 2rem; margin-bottom: 6px; }
+.model-badge .mb-name { font-size: .72rem; font-weight: 700; color: var(--purple); font-family: var(--mono); }
+.model-info h3 { font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+.model-info p  { font-size: .84rem; color: var(--muted); line-height: 1.7; }
+.model-params {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px;
+}
+.param { background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 12px;
+  font-size: .75rem; font-family: var(--mono); color: var(--blue); }
+
+/* ─── Score table ─── */
+.score-table {
+  width: 100%; border-collapse: collapse; font-size: .85rem;
+}
+.score-table th {
+  text-align: left; padding: 10px 16px;
+  background: var(--surface); color: var(--muted);
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .08em;
+  border-bottom: 1px solid var(--border);
+}
+.score-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.score-table tr:last-child td { border-bottom: none; }
+.score-table tr:hover td { background: var(--surface); }
+.tag-alto  { background:#450a0a; color:#fca5a5; padding:2px 10px; border-radius:12px; font-size:.75rem; font-weight:700; }
+.tag-medio { background:#422006; color:#fcd34d; padding:2px 10px; border-radius:12px; font-size:.75rem; font-weight:700; }
+.tag-baixo { background:#064e3b; color:#6ee7b7; padding:2px 10px; border-radius:12px; font-size:.75rem; font-weight:700; }
+
+/* ─── Guardrail card ─── */
+.guardrail-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 24px 28px;
+  display: flex; gap: 20px; align-items: flex-start;
+}
+.guardrail-card .gc-icon { font-size: 2.2rem; flex-shrink: 0; margin-top: 2px; }
+.guardrail-card h3 { font-size: .95rem; font-weight: 800; color: var(--yellow); margin-bottom: 8px; }
+.guardrail-card p  { font-size: .84rem; color: var(--muted); line-height: 1.7; }
+.guardrail-card ul { margin: 10px 0 0 18px; font-size: .83rem; color: var(--muted); line-height: 1.8; }
+
+/* ─── Footer ─── */
+footer {
+  margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+  text-align: center; color: var(--border2); font-size: .78rem;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav>
+  <span class="logo">🎓 Caso ENEM</span>
+  <a href="index.html" class="back">← Voltar ao Menu</a>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<div class="hero">
+  <div class="badge-top">🤖 Trilha 4 — Agente Especialista</div>
+  <h1>Agente Consultor<br>Estratégico Educacional</h1>
+  <p>Um consultor de IA que analisa o perfil socioeconômico de qualquer município
+  e responde à pergunta crítica do gestor: onde investir —
+  <strong style="color:var(--purple)">Professores</strong> ou
+  <strong style="color:var(--blue)">Tutores</strong>?</p>
+</div>
+
+<div class="container">
+
+  <!-- ═══ DECISÃO ESTRATÉGICA ═══ -->
+  <div class="section">
+    <div class="section-title">A decisão estratégica</div>
+    <div class="decisao-grid">
+
+      <div class="decisao-card prof">
+        <div class="dc-icon">📚</div>
+        <h3>PROFESSOR</h3>
+        <p>Especialista em <strong>conteúdo acadêmico</strong>. Indicado onde
+        os alunos já têm estrutura em casa — internet, renda adequada e pais
+        com ensino médio completo. O diferencial competitivo é a
+        profundidade curricular.</p>
+        <div class="trigger">
+          <strong>Quando contratar</strong>
+          Score de vulnerabilidade ≤ 35 · Perfil <span style="color:var(--green)">BAIXO</span>
+        </div>
+      </div>
+
+      <div class="decisao-card tutor">
+        <div class="dc-icon">🤝</div>
+        <h3>TUTOR</h3>
+        <p>Profissional de <strong>suporte integral</strong>. Indicado onde
+        os alunos enfrentam vulnerabilidade socioeconômica — precisam de
+        acolhimento emocional, orientação metodológica e compensação pela
+        falta de estrutura em casa.</p>
+        <div class="trigger">
+          <strong>Quando contratar</strong>
+          Score de vulnerabilidade ≥ 65 · Perfil <span style="color:var(--red)">ALTO</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ SCORE TABLE ═══ -->
+  <div class="section">
+    <div class="section-title">Escala de vulnerabilidade</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <table class="score-table">
+        <thead>
+          <tr>
+            <th>Score</th>
+            <th>Perfil</th>
+            <th>Recomendação</th>
+            <th>Lógica</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>65 – 100</strong></td>
+            <td><span class="tag-alto">Alto</span></td>
+            <td>🤝 <strong style="color:var(--blue)">Tutores</strong></td>
+            <td style="color:var(--muted)">Alunos precisam de vínculo e suporte antes do conteúdo</td>
+          </tr>
+          <tr>
+            <td><strong>36 – 64</strong></td>
+            <td><span class="tag-medio">Médio</span></td>
+            <td>⚖️ <strong style="color:var(--yellow)">Combinação</strong></td>
+            <td style="color:var(--muted)">Agente explica qual perfil contratar primeiro e por quê</td>
+          </tr>
+          <tr>
+            <td><strong>0 – 35</strong></td>
+            <td><span class="tag-baixo">Baixo</span></td>
+            <td>📚 <strong style="color:var(--purple)">Professores</strong></td>
+            <td style="color:var(--muted)">Alunos têm base e estrutura; diferencial é o conhecimento</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ PIPELINE ═══ -->
+  <div class="section">
+    <div class="section-title">Arquitetura do pipeline</div>
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="ps-icon">📄</div>
+        <div class="ps-name">Microdados</div>
+        <div class="ps-file">PARTICIPANTES_2025.csv<br>4,8M linhas · latin-1</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="ps-icon">🔬</div>
+        <div class="ps-name">ETL</div>
+        <div class="ps-file">analise.py<br>Q001 Q002 Q007 Q020</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="ps-icon">📊</div>
+        <div class="ps-name">Score</div>
+        <div class="ps-file">Renda 40% +<br>Internet 30% +<br>Escolaridade 30%</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="ps-icon">🤖</div>
+        <div class="ps-name">Agente</div>
+        <div class="ps-file">agente.py<br>watsonx.ai · Mistral-24B</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="ps-icon">📋</div>
+        <div class="ps-name">Recomendação</div>
+        <div class="ps-file">4 blocos · PT-BR<br>Professor ou Tutor</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODELO ═══ -->
+  <div class="section">
+    <div class="section-title">Modelo de linguagem</div>
+    <div class="model-card">
+      <div class="model-badge">
+        <div class="mb-logo">🧠</div>
+        <div class="mb-name">Mistral<br>Small 24B</div>
+      </div>
+      <div class="model-info">
+        <h3>mistralai/mistral-small-3-1-24b-instruct-2503</h3>
+        <p>Modelo instruct de 24 bilhões de parâmetros da Mistral AI, servido
+        via <strong>IBM watsonx.ai</strong>. Responde em português com ótima
+        qualidade de raciocínio educacional, latência de 10–30s e uso eficiente
+        do plano gratuito (sem timeout).</p>
+        <div class="model-params">
+          <span class="param">max_tokens=600</span>
+          <span class="param">temperature=0.3</span>
+          <span class="param">repetition_penalty=1.1</span>
+          <span class="param">time_limit=60s</span>
+          <span class="param">retry=10×backoff</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ GUARDRAIL ═══ -->
+  <div class="section">
+    <div class="section-title">Guardrail — controle de escopo</div>
+    <div class="guardrail-card">
+      <div class="gc-icon">🛡️</div>
+      <div>
+        <h3>Nível 1 — Validação Local (sem custo de API)</h3>
+        <p>Antes de enviar qualquer mensagem ao watsonx.ai, o agente verifica
+        se a pergunta está dentro do contexto educacional. Mensagens fora do
+        escopo recebem uma resposta padronizada imediatamente, sem consumir
+        tokens nem gerar latência.</p>
+        <ul>
+          <li>Analisa palavras-chave: escola, tutor, professor, renda, município, ENEM…</li>
+          <li>Perguntas muito curtas (&lt; 10 chars) são sempre liberadas</li>
+          <li>Reduz custos, protege contra uso indevido e mantém o foco da consultoria</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TERMINAL ANIMADO ═══ -->
+  <div class="section">
+    <div class="section-title">Sessão demonstrativa</div>
+    <div class="terminal-wrap">
+      <div class="term-bar">
+        <div class="dots">
+          <div class="dot" style="background:#ff5f57"></div>
+          <div class="dot" style="background:#febc2e"></div>
+          <div class="dot" style="background:#28c840"></div>
+        </div>
+        <div class="title">bash — caso_enem</div>
+      </div>
+      <div class="term-body" id="terminal-demo">
+        <!-- Preenchido pelo JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ COMANDOS COPIÁVEIS ═══ -->
+  <div class="section">
+    <div class="section-title">Comandos para executar</div>
+
+    <div class="cmd-block">
+      <div class="cmd-header">
+        <span class="cmd-label">📊 Ranking geral (sem agente · rápido)</span>
+        <button class="copy-btn" onclick="copiar(this, 'cmd-ranking')">📋 Copiar</button>
+      </div>
+      <pre class="cmd-code" id="cmd-ranking">python3 main.py --amostra 100000</pre>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header">
+        <span class="cmd-label">🤖 Recomendação única para um município</span>
+        <button class="copy-btn" onclick="copiar(this, 'cmd-unico')">📋 Copiar</button>
+      </div>
+      <pre class="cmd-code" id="cmd-unico">python3 main.py --amostra 100000 --municipio "Salvador"</pre>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header">
+        <span class="cmd-label">💬 Modo interativo — conversa livre com o agente</span>
+        <button class="copy-btn" onclick="copiar(this, 'cmd-interativo')">📋 Copiar</button>
+      </div>
+      <pre class="cmd-code" id="cmd-interativo">python3 main.py --amostra 100000 --municipio "Salvador" --interativo</pre>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header">
+        <span class="cmd-label">🗺️ Nomes de municípios disponíveis (busca parcial)</span>
+        <button class="copy-btn" onclick="copiar(this, 'cmd-busca')">📋 Copiar</button>
+      </div>
+      <pre class="cmd-code" id="cmd-busca"># Aceita parte do nome — case-insensitive
+python3 main.py --amostra 100000 --municipio "Paulo"   # São Paulo, São Paulo do Potengi…
+python3 main.py --amostra 100000 --municipio "Recife"
+python3 main.py --amostra 100000 --municipio "Fortaleza" --interativo
+python3 main.py --amostra 100000 --municipio "Alto Santo" --interativo</pre>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-header">
+        <span class="cmd-label">⚙️ Outros parâmetros úteis</span>
+        <button class="copy-btn" onclick="copiar(this, 'cmd-params')">📋 Copiar</button>
+      </div>
+      <pre class="cmd-code" id="cmd-params"># Dataset completo (4,8M linhas — RAM necessária: ~12 GB)
+python3 main.py --municipio "Recife"
+
+# Arquivo em localização personalizada
+python3 main.py --dados /caminho/para/PARTICIPANTES_2025.csv \
+                --amostra 500000 --municipio "Manaus" --interativo
+
+# Ajuda completa
+python3 main.py --help</pre>
+    </div>
+  </div>
+
+  <!-- ═══ SAÍDA DO AGENTE (EXEMPLO) ═══ -->
+  <div class="section">
+    <div class="section-title">Exemplo de saída — Alto Santo (CE) · Score 91 · Perfil Alto</div>
+    <div class="terminal-wrap">
+      <div class="term-bar">
+        <div class="dots">
+          <div class="dot" style="background:#ff5f57"></div>
+          <div class="dot" style="background:#febc2e"></div>
+          <div class="dot" style="background:#28c840"></div>
+        </div>
+        <div class="title">Resposta do Agente · watsonx.ai · Mistral-24B</div>
+      </div>
+      <div class="term-body">
+<span class="ok">1. DIAGNÓSTICO DO PERFIL</span>
+<span class="output">Alto Santo (CE) apresenta um dos perfis de maior vulnerabilidade
+socioeconômica registrados no ENEM 2025. Com score de 91/100, o município
+combina alta concentração de famílias sem renda formal, baixíssimo acesso
+à internet domiciliar e escolaridade parental precária — formando uma
+barreira tripla ao aprendizado autônomo.</span>
+
+<span class="ok">2. RECOMENDAÇÃO PRINCIPAL</span>
+<span class="warn">▶  PRIORIDADE: TUTORES</span>
+<span class="output">Antes de investir em profundidade curricular, o gestor deve garantir que
+os alunos tenham acesso ao suporte emocional, metodológico e estrutural
+que suas famílias não conseguem oferecer.</span>
+
+<span class="ok">3. JUSTIFICATIVA POR INDICADOR</span>
+<span class="output">• Renda (87% até 1 salário mínimo): insegurança financeira gera
+  absenteísmo e desmotivação. O tutor atua como âncora de permanência.
+• Internet (74% sem acesso): impossibilita atividades digitais autônomas.
+  O tutor compensa presencialmente o que o digital não alcança.
+• Escolaridade dos pais (92% sem EM completo): ausência de suporte no lar
+  para tarefas e dúvidas. O tutor substitui esse papel de referência.</span>
+
+<span class="ok">4. AÇÕES ESTRATÉGICAS SUGERIDAS</span>
+<span class="output">① Contrate tutores com perfil socioafetivo e experiência em comunidades
+  vulneráveis antes de qualquer especialista de conteúdo.
+② Estabeleça uma sala de recursos digital na escola (computadores + wi-fi)
+  como compensação estrutural ao déficit domiciliar.
+③ Crie um programa de acompanhamento familiar mensal: sem o engajamento
+  dos pais (mesmo com baixa escolaridade), a evasão tende a crescer.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PERGUNTAS SUGERIDAS ═══ -->
+  <div class="section">
+    <div class="section-title">💬 Perguntas para fazer no modo interativo</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+      <div class="cmd-block" style="margin:0">
+        <div class="cmd-header">
+          <span class="cmd-label">Perfil profissional</span>
+          <button class="copy-btn" onclick="copiar(this,'p1')">📋</button>
+        </div>
+        <pre class="cmd-code" id="p1" style="font-size:.78rem">Qual o perfil ideal de tutor para
+este município?</pre>
+      </div>
+
+      <div class="cmd-block" style="margin:0">
+        <div class="cmd-header">
+          <span class="cmd-label">Salário e contratação</span>
+          <button class="copy-btn" onclick="copiar(this,'p2')">📋</button>
+        </div>
+        <pre class="cmd-code" id="p2" style="font-size:.78rem">Qual a proporção ideal de tutores
+por aluno nesse contexto?</pre>
+      </div>
+
+      <div class="cmd-block" style="margin:0">
+        <div class="cmd-header">
+          <span class="cmd-label">Risco de negócio</span>
+          <button class="copy-btn" onclick="copiar(this,'p3')">📋</button>
+        </div>
+        <pre class="cmd-code" id="p3" style="font-size:.78rem">Quais os maiores riscos de abrir
+uma escola particular neste município?</pre>
+      </div>
+
+      <div class="cmd-block" style="margin:0">
+        <div class="cmd-header">
+          <span class="cmd-label">Ensino médio vs fundamental</span>
+          <button class="copy-btn" onclick="copiar(this,'p4')">📋</button>
+        </div>
+        <pre class="cmd-code" id="p4" style="font-size:.78rem">A recomendação muda se o foco for
+o ensino fundamental?</pre>
+      </div>
+
+      <div class="cmd-block" style="margin:0">
+        <div class="cmd-header">
+          <span class="cmd-label">Comparação regional</span>
+          <button class="copy-btn" onclick="copiar(this,'p5')">📋</button>
+        </div>
+        <pre class="cmd-code" id="p5" style="font-size:.78rem">Como esse município se compara
+com a média do Nordeste?</pre>
+      </div>
+
+      <div class="cmd-block" style="margin:0">
+        <div class="cmd-header">
+          <span class="cmd-label">Ação imediata</span>
+          <button class="copy-btn" onclick="copiar(this,'p6')">📋</button>
+        </div>
+        <pre class="cmd-code" id="p6" style="font-size:.78rem">Se eu tiver orçamento para apenas
+um profissional, quem contrato primeiro?</pre>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer>
+    Fonte: Microdados ENEM 2025 — INEP &nbsp;·&nbsp;
+    IBM watsonx.ai &nbsp;·&nbsp;
+    Caso Prático Trilha 4 — Agente Especialista
+  </footer>
+
+</div><!-- /container -->
+
+<script>
+/* ─── Copiar para área de transferência ─── */
+function copiar(btn, id) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.innerHTML = orig;
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(() => {
+    // fallback legado
+    const el = document.getElementById(id);
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('copy');
+    sel.removeAllRanges();
+    btn.innerHTML = '✅ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.innerHTML = '📋 Copiar';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+/* ─── Terminal animado ─── */
+const linhas = [
+  { tipo: 'comment', texto: '# Modo interativo — apresentação ao vivo',    delay: 200  },
+  { tipo: 'cmd',     texto: '$ python3 main.py --amostra 100000 \\',        delay: 800  },
+  { tipo: 'cmd',     texto: '         --municipio "Alto Santo" --interativo', delay: 200 },
+  { tipo: 'dim',     texto: '',                                               delay: 400  },
+  { tipo: 'output',  texto: '[analise] Carregando 100.000 linhas...',         delay: 600  },
+  { tipo: 'output',  texto: '[analise] 1.801 municípios encontrados.',        delay: 500  },
+  { tipo: 'dim',     texto: '',                                               delay: 300  },
+  { tipo: 'output',  texto: '---------------------------------------------', delay: 100  },
+  { tipo: 'output',  texto: '  PERFIL SOCIOECONÔMICO — Alto Santo (CE)',      delay: 100  },
+  { tipo: 'output',  texto: '---------------------------------------------', delay: 100  },
+  { tipo: 'output',  texto: '  Score de vulnerabilidade : 91.0/100',          delay: 100  },
+  { tipo: 'warn',    texto: '  Classificação            : Alto',              delay: 100  },
+  { tipo: 'output',  texto: '  % sem internet em casa   : 74.0%',             delay: 100  },
+  { tipo: 'output',  texto: '  % renda ≤ 1 salário mín. : 87.0%',            delay: 100  },
+  { tipo: 'output',  texto: '  % pais sem Ensino Médio  : 92.0%',             delay: 100  },
+  { tipo: 'output',  texto: '  Alunos analisados        : 42',                delay: 100  },
+  { tipo: 'dim',     texto: '',                                               delay: 400  },
+  { tipo: 'output',  texto: '[agente] Conectando ao IBM watsonx.ai...',       delay: 300  },
+  { tipo: 'ok',      texto: '[agente] Conectado.',                            delay: 800  },
+  { tipo: 'output',  texto: '[agente] Gerando análise inicial... aguarde.',   delay: 300  },
+  { tipo: 'warn',    texto: '[agente] Tentativa 1/10...',                     delay: 1200 },
+  { tipo: 'ok',      texto: '[agente] Resposta recebida em 18.4s.',           delay: 700  },
+  { tipo: 'dim',     texto: '',                                               delay: 200  },
+  { tipo: 'ok',      texto: '  RECOMENDAÇÃO → PRIORIDADE: TUTORES',           delay: 100  },
+  { tipo: 'dim',     texto: '',                                               delay: 500  },
+  { tipo: 'output',  texto: '  Digite sua pergunta ou um dos comandos:',      delay: 100  },
+  { tipo: 'output',  texto: "  'sair' | 'perfil' | 'limpar'",                delay: 100  },
+  { tipo: 'dim',     texto: '',                                               delay: 600  },
+  { tipo: 'prompt',  texto: '>>> Você: ',                                     delay: 400  },
+  { tipo: 'cmd',     texto: '>>> Você: Qual perfil de tutor contratar aqui?', delay: 1000 },
+  { tipo: 'dim',     texto: '',                                               delay: 300  },
+  { tipo: 'output',  texto: '[agente] Consultando... aguarde.',               delay: 300  },
+  { tipo: 'warn',    texto: '[agente] Tentativa 1/10...',                     delay: 1500 },
+  { tipo: 'output',  texto: 'Para Alto Santo, priorize tutores com forte',    delay: 200  },
+  { tipo: 'output',  texto: 'competência socioafetiva e experiência em',      delay: 100  },
+  { tipo: 'output',  texto: 'comunidades vulneráveis — mais do que',          delay: 100  },
+  { tipo: 'output',  texto: 'especialização em disciplinas específicas…',     delay: 100  },
+  { tipo: 'dim',     texto: '',                                               delay: 400  },
+  { tipo: 'prompt',  texto: '>>> Você: █',                                    delay: 200  },
+];
+
+let i = 0;
+const termEl = document.getElementById('terminal-demo');
+
+function addLinha(l) {
+  const p = document.createElement('p');
+  p.className = l.tipo;
+  p.textContent = l.texto;
+  if (l.tipo === 'prompt' && l.texto.endsWith('█')) {
+    p.innerHTML = l.texto.replace('█', '<span class="blink">█</span>');
+  }
+  termEl.appendChild(p);
+  termEl.scrollTop = termEl.scrollHeight;
+}
+
+function animarTerminal() {
+  if (i >= linhas.length) return;
+  const l = linhas[i++];
+  addLinha(l);
+  setTimeout(animarTerminal, l.delay);
+}
+
+// Inicia animação após 800ms de carregamento da página
+setTimeout(animarTerminal, 800);
+</script>
+
+</body>
+</html>
