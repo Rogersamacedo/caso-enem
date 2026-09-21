@@ -1,287 +1,93 @@
 # =============================================================
-# main.py — Orquestrador do pipeline Caso ENEM
+# main.py — Interface de Inicialização do Agente Consultor
 #
-# Ranking geral (sem agente):
-#   python main.py --amostra 100000
-#
-# Recomendação única para um município:
-#   python main.py --amostra 100000 --municipio "Salvador"
-#
-# Modo interativo — conversa livre com o agente no terminal:
-#   python main.py --amostra 100000 --municipio "Salvador" --interativo
+# Permite que o usuário informe o município de interesse, busca os
+# dados do ENEM automaticamente no arquivo Parquet unificado e
+# abre o modo de chat interativo (conversa livre com histórico).
 # =============================================================
 
-import argparse
 import sys
-import textwrap
-
-import config
-from analise import (
-    calcular_score_vulnerabilidade,
-    carregar_microdados,
-    obter_perfil_municipio,
-)
 from agente import AgenteConsultor
 
-# Largura da linha para formatação do terminal
-_LARGURA = 65
-
-
-def _separador(char: str = "=") -> str:
-    return char * _LARGURA
-
-
-def _imprimir_ranking(df_agg) -> None:
-    """Imprime os rankings dos 10 municípios mais e menos vulneráveis."""
-    colunas = ["municipio", "uf", "score_vulnerabilidade", "perfil", "n_alunos"]
-
-    print()
-    print(_separador())
-    print("  TOP 10 — MAIOR VULNERABILIDADE  →  PRIORIDADE: TUTORES")
-    print(_separador())
-    print(df_agg.head(10)[colunas].to_string(index=False))
-
-    print()
-    print(_separador())
-    print("  TOP 10 — MENOR VULNERABILIDADE  →  PRIORIDADE: PROFESSORES")
-    print(_separador())
-    print(df_agg.tail(10)[colunas].to_string(index=False))
-    print()
-
-
-def _imprimir_perfil(perfil: dict) -> None:
-    """Imprime os indicadores do município de forma legível."""
-    print()
-    print(_separador("-"))
-    print(f"  PERFIL SOCIOECONÔMICO — {perfil['municipio']} ({perfil['uf']})")
-    print(_separador("-"))
-    print(f"  Score de vulnerabilidade : {perfil['score_vulnerabilidade']}/100")
-    print(f"  Classificação            : {perfil['perfil']}")
-    print(f"  % sem internet em casa   : {perfil['pct_sem_internet']}%")
-    print(f"  % renda ≤ 1 salário mín. : {perfil['pct_renda_baixa']}%")
-    print(f"  % pais sem Ensino Médio  : {perfil['pct_pais_baixa_escolaridade']}%")
-    print(f"  Alunos analisados        : {perfil['n_alunos']:,}")
-    print(_separador("-"))
-
-
-def _imprimir_recomendacao(municipio: str, uf: str, texto: str) -> None:
-    """Imprime a recomendação do agente com formatação limpa."""
-    print()
-    print(_separador())
-    print(f"  RECOMENDAÇÃO ESTRATÉGICA — {municipio} ({uf})")
-    print(_separador())
-    # Quebra de linha automática para respeitar a largura do terminal
-    for linha in texto.split("\n"):
-        if linha.strip():
-            print(textwrap.fill(linha, width=_LARGURA, subsequent_indent="  "))
-        else:
-            print()
-    print(_separador())
-    print()
-
-
-def _modo_interativo(agente, perfil: dict) -> None:
-    """Loop de conversa interativa no terminal.
-
-    O agente mantém o histórico completo da sessão — cada pergunta
-    digitada recebe uma resposta que considera tudo que foi dito antes.
-
-    Comandos especiais:
-      sair   → encerra a sessão
-      perfil → exibe novamente os indicadores do município
-      limpar → apaga o histórico e recomeça a conversa
-    """
-    print()
-    print(_separador())
-    print("  MODO INTERATIVO — AGENTE CONSULTOR ENEM")
-    print(_separador())
-    print(f"  Município: {perfil['municipio']} ({perfil['uf']}) | "
-          f"Score: {perfil['score_vulnerabilidade']} | Perfil: {perfil['perfil']}")
-    print(_separador())
-    print("  Comandos: 'sair' | 'perfil' | 'limpar'")
-    print(_separador())
-    print()
-
-    # Passo 1: gera a análise inicial usando consultar() — modo estático limpo
-    print("[agente] Gerando análise inicial... aguarde.", flush=True)
-    print("[agente] (Pode demorar até 2 min se houver fila no servidor)\n", flush=True)
+def main():
+    print("=" * 65)
+    print("   BEM-VINDO AO AGENTE CONSULTOR ESTRATÉGICO EDUCACIONAL   ")
+    print("                Análise Socioeconômica - ENEM              ")
+    print("=" * 65)
+    
+    # 1. Inicializa o agente carregando as configurações da IBM
     try:
-        resposta_inicial = agente.consultar(perfil)
+        print("🤖 Inicializando inteligência do agente...")
+        agente = AgenteConsultor()
     except Exception as e:
-        print(f"\n[ERRO] {e}\n")
-        return
+        print(f"\n❌ Erro crítico ao carregar o agente: {e}")
+        print("Verifique se o seu arquivo .env está configurado corretamente.")
+        sys.exit(1)
 
-    _imprimir_recomendacao(perfil["municipio"], perfil["uf"], resposta_inicial)
+    # 2. Loop de busca do município com o Parquet unificado
+    perfil_resumo = None
+    while not perfil_resumo:
+        print("\n📍 Digite o nome do município que deseja analisar (ou 'sair'):")
+        municipio_input = input("👉 ").strip()
+        
+        if municipio_input.lower() in ['sair', 'exit', 'q']:
+            print("\n👋 Encerrando consultoria. Até logo!")
+            sys.exit(0)
+            
+        if not municipio_input:
+            print("⚠️ Por favor, digite um nome válido.")
+            continue
+            
+        try:
+            print(f"\n🔍 Buscando '{municipio_input}' na base unificada do grupo...")
+            # Chama a função modificada que lê direto do Parquet do seu colega
+            perfil_resumo = agente.iniciar_sessao(municipio_input)
+            
+            print("\n" + "=" * 50)
+            print("📊 PERFIL EDUCACIONAL CONTEXTUALIZADO")
+            print("=" * 50)
+            print(perfil_resumo)
+            print("=" * 50)
+            
+        except FileNotFoundError as e:
+            print(f"\n❌ {e}")
+            print("Certifique-se de que o arquivo 'tabela_municipio_final.parquet' está nesta pasta.")
+            sys.exit(1)
+        except ValueError as e:
+            print(f"\n⚠️ {e}")
+            print("Tente digitar o nome completo com acentos se necessário (Ex: São Paulo, Ribeirão Preto).")
+            continue
 
-    # Passo 2: prepara o histórico com a troca inicial para manter contexto
-    agente.iniciar_sessao(perfil)
-    agente._historico.append({"role": "assistant", "content": resposta_inicial})
-
-    # Passo 3: loop de conversa livre
-    print("  Digite sua pergunta ou um dos comandos abaixo:")
-    print("  'sair' → encerra | 'perfil' → mostra indicadores | 'limpar' → reseta")
-    print()
+    # 3. Inicializa o loop de Chat Interativo
+    print("\n💬 Sessão de chat iniciada! Você pode fazer perguntas sobre estratégias de")
+    print("   investimento, contratação de Professores vs. Tutores ou indicadores locais.")
+    print("   Digite 'voltar' para escolher outra cidade ou 'sair' para encerrar.")
+    print("-" * 65)
 
     while True:
-        try:
-            entrada = input(">>> Você: ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\n[agente] Sessão encerrada.")
-            break
-
-        if not entrada:
+        pergunta = input("\n👤 Você: ").strip()
+        
+        if not pergunta:
             continue
-
-        if entrada.lower() == "sair":
-            print("\n[agente] Sessão encerrada. Até logo!")
+            
+        if pergunta.lower() in ['sair', 'exit', 'q']:
+            print("\n👋 Encerrando consultoria. Até logo!")
             break
-
-        if entrada.lower() == "perfil":
-            _imprimir_perfil(perfil)
-            continue
-
-        if entrada.lower() == "limpar":
+            
+        if pergunta.lower() == 'voltar':
+            print("\n🔄 Reiniciando o pipeline para nova busca...")
             agente.limpar_historico()
-            agente.iniciar_sessao(perfil)
-            agente._historico.append({"role": "assistant", "content": resposta_inicial})
-            print("\n[agente] Histórico limpo. Pode perguntar algo novo.\n")
-            continue
+            main() # Recomeça o fluxo
+            break
 
-        print("\n[agente] Consultando... aguarde.\n")
-        try:
-            resposta = agente.chat(entrada)
-        except Exception as e:
-            print(f"\n[ERRO] {e}\n")
-            continue
-
-        print()
-        print(_separador("-"))
-        for linha in resposta.split("\n"):
-            if linha.strip():
-                print(textwrap.fill(linha, width=_LARGURA, subsequent_indent="  "))
-            else:
-                print()
-        print(_separador("-"))
-        print()
-
-
-def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description=(
-            "Caso ENEM — Agente Consultor Estratégico\n"
-            "Analisa os microdados do ENEM e recomenda onde investir\n"
-            "em Professores (conteúdo) ou Tutores (suporte integral)."
-        ),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=textwrap.dedent(
-            """
-            Exemplos:
-              # Ranking sem agente (rápido)
-              python main.py --amostra 100000
-
-              # Recomendação única para um município
-              python main.py --amostra 100000 --municipio "Salvador"
-
-              # Modo interativo — conversa livre no terminal
-              python main.py --amostra 100000 --municipio "Salvador" --interativo
-              python main.py --amostra 100000 --municipio "Recife"   --interativo
-            """
-        ),
-    )
-    parser.add_argument(
-        "--dados",
-        default=config.CAMINHO_DADOS_PADRAO,
-        metavar="CAMINHO",
-        help=(
-            f"Caminho para o arquivo PARTICIPANTES_XXXX.csv "
-            f"(padrão: {config.CAMINHO_DADOS_PADRAO})"
-        ),
-    )
-    parser.add_argument(
-        "--municipio",
-        default=None,
-        metavar="NOME",
-        help=(
-            "Nome (ou parte do nome) do município a consultar. "
-            "Se omitido, exibe o ranking dos 10 mais e 10 menos vulneráveis."
-        ),
-    )
-    parser.add_argument(
-        "--amostra",
-        default=None,
-        type=int,
-        metavar="N",
-        help=(
-            "Carrega apenas as primeiras N linhas do CSV. "
-            "Recomendado para máquinas com pouca RAM. "
-            "Ex: --amostra 100000 (rápido) ou --amostra 500000 (representativo). "
-            "Omitir carrega o dataset completo (~4,8 milhões de linhas)."
-        ),
-    )
-    parser.add_argument(
-        "--interativo",
-        action="store_true",
-        default=False,
-        help=(
-            "Abre o modo de conversa interativa após a análise inicial. "
-            "Requer --municipio. Ideal para apresentações e perguntas livres."
-        ),
-    )
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = _parse_args()
-
-    # --- 1. Carregar e processar os microdados ---
-    try:
-        df_bruto = carregar_microdados(args.dados, amostra=args.amostra)
-    except FileNotFoundError:
-        print(
-            f"\n[ERRO] Arquivo não encontrado: {args.dados}\n"
-            "Verifique o caminho ou use --dados para informar o local correto.\n",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    df_agg = calcular_score_vulnerabilidade(df_bruto)
-
-    # --- 2. Modo ranking (sem município informado) ---
-    if args.municipio is None:
-        _imprimir_ranking(df_agg)
-        print(
-            "Dica: use --municipio \"<nome>\" para obter a recomendação "
-            "estratégica detalhada de um município específico."
-        )
-        return
-
-    # --- 3. Modo consulta (com município informado) ---
-    perfil = obter_perfil_municipio(df_agg, args.municipio)
-
-    if perfil is None:
-        print(
-            f"\n[ERRO] Município \"{args.municipio}\" não encontrado nos dados.\n"
-            "Verifique a grafia ou tente uma parte do nome (ex: \"Paulo\" para \"São Paulo\").\n",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    _imprimir_perfil(perfil)
-
-    try:
-        agente = AgenteConsultor()
-    except EnvironmentError as e:
-        print(f"\n[ERRO] {e}\n", file=sys.stderr)
-        sys.exit(1)
-
-    # --- 4. Modo interativo ou estático ---
-    if args.interativo:
-        _modo_interativo(agente, perfil)
-    else:
-        print("\n[agente] Consultando IBM watsonx.ai... aguarde.\n")
-        recomendacao = agente.consultar(perfil)
-        _imprimir_recomendacao(perfil["municipio"], perfil["uf"], recomendacao)
-
+        # Envia a pergunta ao Watsonx através do histórico contextualizado
+        resposta = agente.chat(pergunta)
+        print(f"\n🤖 Agente:\n{resposta}")
+        print("-" * 65)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\n👋 Operação cancelada pelo usuário. Saindo...")
+        sys.exit(0)
