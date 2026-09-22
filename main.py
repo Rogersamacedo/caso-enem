@@ -51,7 +51,7 @@ def main():
             
         except FileNotFoundError as e:
             print(f"\n❌ {e}")
-            print("Certifique-se de que o arquivo 'tabela_municipio_final.parquet' está nesta pasta.")
+            print("Certifique-se de que o arquivo 'dados/tratado/tabela_municipio_final.csv' está disponível.")
             sys.exit(1)
         except ValueError as e:
             print(f"\n⚠️ {e}")

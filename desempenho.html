@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caso ENEM — Desempenho</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root{
+      --bg:#0b0f1a; --card:#111827; --card2:#0f172a; --line:#243047;
+      --text:#e5e7eb; --muted:#94a3b8; --accent:#60a5fa; --accent2:#a78bfa;
+      --good:#34d399; --warn:#fbbf24;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .wrap{max-width:1400px;margin:auto;padding:28px}
+    header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:24px}
+    h1{margin:0 0 6px;font-size:30px}
+    .subtitle{color:var(--muted);font-size:14px}
+    .back{color:#dbeafe;text-decoration:none;border:1px solid var(--line);padding:10px 14px;border-radius:10px;background:var(--card)}
+    .controls{display:flex;flex-wrap:wrap;gap:12px;background:var(--card);border:1px solid var(--line);padding:16px;border-radius:14px;margin-bottom:18px}
+    label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+    select,button{background:#0b1220;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px 12px}
+    button{cursor:pointer}
+    .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+    .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+    .kpi .label{font-size:12px;color:var(--muted);margin-bottom:8px}
+    .kpi .value{font-size:25px;font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .chart{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;min-height:430px}
+    .full{grid-column:1/-1}
+    .note{margin-top:18px;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:16px;color:var(--muted);font-size:13px;line-height:1.6}
+    footer{margin-top:20px;color:#64748b;font-size:12px}
+    .error{padding:30px;background:#35151a;border:1px solid #7f1d1d;border-radius:14px}
+    @media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+    @media(max-width:600px){.wrap{padding:16px}.kpis{grid-template-columns:1fr}header{flex-direction:column}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>📊 Desempenho no ENEM</h1>
+      <div class="subtitle">Análise da base municipal agregada — Caso ENEM · Trilha 4</div>
+    </div>
+    <a class="back" href="index.html">← Voltar ao início</a>
+  </header>
+
+  <div class="controls">
+    <label>Região
+      <select id="regiao"><option value="">Todas</option></select>
+    </label>
+    <label>UF
+      <select id="uf"><option value="">Todas</option></select>
+    </label>
+    <button onclick="resetar()">Limpar filtros</button>
+  </div>
+
+  <section class="kpis">
+    <div class="kpi"><div class="label">Municípios selecionados</div><div class="value" id="kMunicipios">—</div></div>
+    <div class="kpi"><div class="label">Alunos inscritos</div><div class="value" id="kInscritos">—</div></div>
+    <div class="kpi"><div class="label">Média geral</div><div class="value" id="kGeral">—</div></div>
+    <div class="kpi"><div class="label">Média da redação</div><div class="value" id="kRedacao">—</div></div>
+    <div class="kpi"><div class="label">Taxa média de ausência</div><div class="value" id="kAusencia">—</div></div>
+  </section>
+
+  <section class="grid">
+    <div class="chart full" id="areas"></div>
+    <div class="chart" id="regioes"></div>
+    <div class="chart" id="vulnerabilidade"></div>
+    <div class="chart" id="redacao"></div>
+    <div class="chart" id="ausencia"></div>
+  </section>
+
+  <div class="note">
+    <strong>Nota metodológica:</strong> os indicadores apresentados são calculados sobre a base municipal agregada
+    <strong>tabela_municipio_final.csv</strong>. As médias de notas representam a média simples entre os municípios
+    selecionados. Relações entre vulnerabilidade, ausência e desempenho são apresentadas como associações descritivas;
+    não devem ser interpretadas como evidência de causalidade.
+  </div>
+
+  <footer>Fonte: Microdados ENEM 2025 — INEP · Base municipal derivada para o Caso ENEM.</footer>
+</div>
+
+<script>
+let dados = [];
+
+const numCols = [
+  "qtd_inscritos","qtd_treineiros","indice_vulnerabilidade_medio",
+  "pct_sem_computador","pct_sem_internet","pct_escola_publica",
+  "pct_sem_renda_familiar","pct_pais_baixa_escolaridade",
+  "pct_baixa_vulnerabilidade","pct_media_vulnerabilidade",
+  "pct_alta_vulnerabilidade","nota_media_cn","nota_media_ch",
+  "nota_media_lc","nota_media_mt","nota_media_redacao",
+  "nota_media_geral","n_efetivo_nota","taxa_ausencia_pct",
+  "pct_treineiros","peso_estatistico"
+];
+
+function parseCSV(text){
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines[0].split(",").map(x=>x.trim());
+  return lines.slice(1).filter(Boolean).map(line=>{
+    const parts = line.split(",");
+    const obj = {};
+    headers.forEach((h,i)=>{
+      let v = (parts[i] ?? "").trim();
+      if(numCols.includes(h)) v = v === "" ? NaN : Number(v.replace(",","."));
+      obj[h] = v;
+    });
+    return obj;
+  });
+}
+
+function media(arr,key){
+  const v = arr.map(d=>Number(d[key])).filter(Number.isFinite);
+  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : NaN;
+}
+function soma(arr,key){
+  return arr.reduce((s,d)=>s+(Number(d[key])||0),0);
+}
+function fmt(v,d=1){return Number.isFinite(v)?v.toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d}):"—"}
+function fmtInt(v){return Number.isFinite(v)?Math.round(v).toLocaleString("pt-BR"):"—"}
+
+function preencherFiltros(){
+  const regioes=[...new Set(dados.map(d=>d.regiao).filter(Boolean))].sort();
+  const ufs=[...new Set(dados.map(d=>d.uf).filter(Boolean))].sort();
+  const r=document.getElementById("regiao"), u=document.getElementById("uf");
+  regioes.forEach(x=>r.add(new Option(x,x)));
+  ufs.forEach(x=>u.add(new Option(x,x)));
+  r.addEventListener("change", atualizar);
+  u.addEventListener("change", atualizar);
+}
+function aplicarFiltros(){
+  const r=document.getElementById("regiao").value;
+  const u=document.getElementById("uf").value;
+  return dados.filter(d=>(!r||d.regiao===r)&&(!u||d.uf===u));
+}
+function atualizarKPIs(arr){
+  document.getElementById("kMunicipios").textContent=fmtInt(arr.length);
+  document.getElementById("kInscritos").textContent=fmtInt(soma(arr,"qtd_inscritos"));
+  document.getElementById("kGeral").textContent=fmt(media(arr,"nota_media_geral"))+" pts";
+  document.getElementById("kRedacao").textContent=fmt(media(arr,"nota_media_redacao"))+" pts";
+  document.getElementById("kAusencia").textContent=fmt(media(arr,"taxa_ausencia_pct"))+"%";
+}
+const CORES_REGIAO = {
+  "Norte":"#34d399",
+  "Nordeste":"#f59e0b",
+  "Centro-Oeste":"#a78bfa",
+  "Sudeste":"#60a5fa",
+  "Sul":"#f87171"
+};
+const COR_PADRAO = "#60a5fa";
+
+function corAtual(){
+  const regiao = document.getElementById("regiao").value;
+  return CORES_REGIAO[regiao] || COR_PADRAO;
+}
+
+const layoutBase={
+  paper_bgcolor:"transparent",plot_bgcolor:"transparent",
+  font:{color:"#e5e7eb"},margin:{l:55,r:25,t:55,b:55},
+  xaxis:{gridcolor:"#243047"},yaxis:{gridcolor:"#243047"},
+  legend:{font:{color:"#e5e7eb"}}
+};
+function plot(id,data,title,xTitle="",yTitle=""){
+  const layout={...layoutBase,title:{text:title,font:{size:16}},xaxis:{...layoutBase.xaxis,title:xTitle},yaxis:{...layoutBase.yaxis,title:yTitle}};
+  Plotly.newPlot(id,data,layout,{responsive:true,displayModeBar:false});
+}
+function graficoAreas(arr){
+  const labels=["Ciências da Natureza","Ciências Humanas","Linguagens","Matemática","Redação"];
+  const vals=[
+    media(arr,"nota_media_cn"),media(arr,"nota_media_ch"),
+    media(arr,"nota_media_lc"),media(arr,"nota_media_mt"),
+    media(arr,"nota_media_redacao")
+  ];
+  plot("areas",[{x:labels,y:vals,type:"bar",marker:{color:corAtual()},text:vals.map(v=>fmt(v)),textposition:"auto"}],
+       "Média por área do conhecimento","Área","Pontos");
+}
+function agruparPor(arr,key){
+  const m={};
+  arr.forEach(d=>{
+    const g=d[key]||"Não informado";
+    if(!m[g])m[g]=[];
+    m[g].push(d);
+  });
+  return m;
+}
+function graficoRegioes(arr){
+  const g=agruparPor(arr,"regiao");
+  const x=Object.keys(g).sort();
+  const y=x.map(k=>media(g[k],"nota_media_geral"));
+  plot("regioes",[{x,y,type:"bar",marker:{color:corAtual()},text:y.map(v=>fmt(v)),textposition:"auto"}],
+       "Média geral por região","Região","Pontos");
+}
+function normalizaVul(v){return Number.isFinite(v)?(v<=1?v*100:v):NaN}
+function graficoDispersao(arr){
+  const x=arr.map(d=>normalizaVul(Number(d.indice_vulnerabilidade_medio)));
+  const y=arr.map(d=>Number(d.nota_media_geral));
+  const text=arr.map(d=>`${d.nome_municipio} (${d.uf})`);
+  plot("vulnerabilidade",
+    [{x,y,text,mode:"markers",type:"scatter",marker:{size:7,color:corAtual()},hovertemplate:"%{text}<br>Vulnerabilidade: %{x:.1f}<br>Média geral: %{y:.1f}<extra></extra>"}],
+    "Vulnerabilidade × média geral","Índice de vulnerabilidade","Média geral");
+}
+function graficoRedacao(arr){
+  const x=arr.map(d=>Number(d.nota_media_geral));
+  const y=arr.map(d=>Number(d.nota_media_redacao));
+  const text=arr.map(d=>`${d.nome_municipio} (${d.uf})`);
+  plot("redacao",
+    [{x,y,text,mode:"markers",type:"scatter",marker:{size:7,color:corAtual()},hovertemplate:"%{text}<br>Média geral: %{x:.1f}<br>Redação: %{y:.1f}<extra></extra>"}],
+    "Média geral × redação","Média geral","Média da redação");
+}
+function graficoAusencia(arr){
+  const vals=arr.map(d=>Number(d.taxa_ausencia_pct)).filter(Number.isFinite);
+  plot("ausencia",
+    [{x:vals,type:"histogram",nbinsx:20,marker:{color:corAtual()} }],
+    "Distribuição da taxa de ausência","Taxa de ausência (%)","Municípios");
+}
+function atualizar(){
+  const arr=aplicarFiltros();
+  atualizarKPIs(arr);
+  graficoAreas(arr);
+  graficoRegioes(arr);
+  graficoDispersao(arr);
+  graficoRedacao(arr);
+  graficoAusencia(arr);
+}
+function resetar(){
+  document.getElementById("regiao").value="";
+  document.getElementById("uf").value="";
+  atualizar();
+}
+async function iniciar(){
+  try{
+    const resp=await fetch("dados/tratado/tabela_municipio_final.csv");
+    if(!resp.ok) throw new Error("CSV não encontrado");
+    const text=await resp.text();
+    dados=parseCSV(text);
+    preencherFiltros();
+    atualizar();
+  }catch(e){
+    document.querySelector(".wrap").innerHTML=`
+      <div class="error">
+        <h2>Não foi possível carregar a base de dados.</h2>
+        <p>Verifique se <strong>tabela_municipio_final.csv</strong> está em dados/tratado/.</p>
+        <p>Se estiver abrindo o HTML diretamente pelo navegador, execute na pasta do projeto:</p>
+        <pre>python3 -m http.server</pre>
+        <p>Depois acesse <strong>http://localhost:8000/desempenho.html</strong>.</p>
+      </div>`;
+  }
+}
+iniciar();
+</script>
+</body>
+</html>

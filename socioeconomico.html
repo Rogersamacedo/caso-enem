@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caso ENEM — Perfil Socioeconômico</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root{--bg:#0b0f1a;--card:#111827;--card2:#0f172a;--line:#243047;--text:#e5e7eb;--muted:#94a3b8;--accent:#a78bfa}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .wrap{max-width:1400px;margin:auto;padding:28px}
+    header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:24px}
+    h1{margin:0 0 6px;font-size:30px}.subtitle{color:var(--muted);font-size:14px}
+    .back{color:#e9d5ff;text-decoration:none;border:1px solid var(--line);padding:10px 14px;border-radius:10px;background:var(--card)}
+    .controls{display:flex;flex-wrap:wrap;gap:12px;background:var(--card);border:1px solid var(--line);padding:16px;border-radius:14px;margin-bottom:18px}
+    label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+    select,button{background:#0b1220;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px 12px}
+    button{cursor:pointer}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+    .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+    .kpi .label{font-size:12px;color:var(--muted);margin-bottom:8px}.kpi .value{font-size:25px;font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .chart{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;min-height:430px}
+    .full{grid-column:1/-1}
+    .note{margin-top:18px;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:16px;color:var(--muted);font-size:13px;line-height:1.6}
+    footer{margin-top:20px;color:#64748b;font-size:12px}
+    .error{padding:30px;background:#35151a;border:1px solid #7f1d1d;border-radius:14px}
+    @media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+    @media(max-width:600px){.wrap{padding:16px}.kpis{grid-template-columns:1fr}header{flex-direction:column}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🌎 Perfil Socioeconômico</h1>
+      <div class="subtitle">Indicadores de contexto socioeconômico dos municípios analisados — Caso ENEM · Trilha 4</div>
+    </div>
+    <a class="back" href="index.html">← Voltar ao início</a>
+  </header>
+
+  <div class="controls">
+    <label>Região
+      <select id="regiao"><option value="">Todas</option></select>
+    </label>
+    <label>UF
+      <select id="uf"><option value="">Todas</option></select>
+    </label>
+    <button onclick="resetar()">Limpar filtros</button>
+  </div>
+
+  <section class="kpis">
+    <div class="kpi"><div class="label">% sem computador</div><div class="value" id="kComputador">—</div></div>
+    <div class="kpi"><div class="label">% sem internet</div><div class="value" id="kInternet">—</div></div>
+    <div class="kpi"><div class="label">% sem renda familiar informada</div><div class="value" id="kRenda">—</div></div>
+    <div class="kpi"><div class="label">% pais com baixa escolaridade</div><div class="value" id="kPais">—</div></div>
+  </section>
+
+  <section class="grid">
+    <div class="chart full" id="indicadores"></div>
+    <div class="chart" id="regioes"></div>
+    <div class="chart" id="vulnerabilidade"></div>
+    <div class="chart" id="internet"></div>
+    <div class="chart" id="publica"></div>
+    <div class="chart full" id="distribuicao"></div>
+  </section>
+
+  <div class="note">
+    <strong>Nota metodológica:</strong> os indicadores são calculados a partir da base municipal agregada
+    <strong>tabela_municipio_final.csv</strong>. Os percentuais representam médias simples entre os municípios
+    selecionados. Os gráficos descrevem associações entre características socioeconômicas e desempenho;
+    não permitem concluir causalidade isoladamente.
+  </div>
+
+  <footer>Fonte: Microdados ENEM 2025 — INEP · Base municipal derivada para o Caso ENEM.</footer>
+</div>
+
+<script>
+let dados=[];
+const numCols=[
+  "qtd_inscritos","qtd_treineiros","indice_vulnerabilidade_medio","pct_sem_computador",
+  "pct_sem_internet","pct_escola_publica","pct_sem_renda_familiar","pct_pais_baixa_escolaridade",
+  "pct_baixa_vulnerabilidade","pct_media_vulnerabilidade","pct_alta_vulnerabilidade",
+  "nota_media_cn","nota_media_ch","nota_media_lc","nota_media_mt","nota_media_redacao",
+  "nota_media_geral","n_efetivo_nota","taxa_ausencia_pct","pct_treineiros","peso_estatistico"
+];
+const CORES_REGIAO={"Norte":"#34d399","Nordeste":"#f59e0b","Centro-Oeste":"#a78bfa","Sudeste":"#60a5fa","Sul":"#f87171"};
+const COR_PADRAO="#a78bfa";
+function corAtual(){const r=document.getElementById("regiao").value;return CORES_REGIAO[r]||COR_PADRAO}
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/),headers=lines[0].split(",").map(x=>x.trim());
+  return lines.slice(1).filter(Boolean).map(line=>{
+    const p=line.split(","),o={};
+    headers.forEach((h,i)=>{let v=(p[i]??"").trim();if(numCols.includes(h))v=v===""?NaN:Number(v.replace(",","."));o[h]=v});
+    return o;
+  });
+}
+function media(arr,key){const v=arr.map(d=>Number(d[key])).filter(Number.isFinite);return v.length?v.reduce((a,b)=>a+b,0)/v.length:NaN}
+function fmt(v){return Number.isFinite(v)?v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}):"—"}
+function preencherFiltros(){
+  const rs=[...new Set(dados.map(d=>d.regiao).filter(Boolean))].sort();
+  const us=[...new Set(dados.map(d=>d.uf).filter(Boolean))].sort();
+  rs.forEach(x=>document.getElementById("regiao").add(new Option(x,x)));
+  us.forEach(x=>document.getElementById("uf").add(new Option(x,x)));
+  document.getElementById("regiao").addEventListener("change",atualizar);
+  document.getElementById("uf").addEventListener("change",atualizar);
+}
+function aplicarFiltros(){
+  const r=document.getElementById("regiao").value,u=document.getElementById("uf").value;
+  return dados.filter(d=>(!r||d.regiao===r)&&(!u||d.uf===u));
+}
+function atualizarKPIs(a){
+  document.getElementById("kComputador").textContent=fmt(media(a,"pct_sem_computador"))+"%";
+  document.getElementById("kInternet").textContent=fmt(media(a,"pct_sem_internet"))+"%";
+  document.getElementById("kRenda").textContent=fmt(media(a,"pct_sem_renda_familiar"))+"%";
+  document.getElementById("kPais").textContent=fmt(media(a,"pct_pais_baixa_escolaridade"))+"%";
+}
+const base={paper_bgcolor:"transparent",plot_bgcolor:"transparent",font:{color:"#e5e7eb"},margin:{l:55,r:25,t:55,b:55},xaxis:{gridcolor:"#243047"},yaxis:{gridcolor:"#243047"}};
+function plot(id,data,title,x="",y=""){
+  Plotly.newPlot(id,data,{...base,title:{text:title,font:{size:16}},xaxis:{...base.xaxis,title:x},yaxis:{...base.yaxis,title:y}},{responsive:true,displayModeBar:false});
+}
+function agrupar(arr,key){const o={};arr.forEach(d=>{const g=d[key]||"Não informado";(o[g]??=[]).push(d)});return o}
+function graficoIndicadores(a){
+  const labels=["Sem computador","Sem internet","Sem renda familiar","Pais com baixa escolaridade"];
+  const vals=[media(a,"pct_sem_computador"),media(a,"pct_sem_internet"),media(a,"pct_sem_renda_familiar"),media(a,"pct_pais_baixa_escolaridade")];
+  plot("indicadores",[{x:labels,y:vals,type:"bar",marker:{color:corAtual()},text:vals.map(v=>fmt(v)+"%"),textposition:"auto"}],"Indicadores socioeconômicos selecionados","","Percentual médio (%)");
+}
+function graficoRegioes(a){
+  const g=agrupar(a,"regiao"),x=Object.keys(g).sort(),y=x.map(k=>media(g[k],"indice_vulnerabilidade_medio")).map(v=>v<=1?v*100:v);
+  plot("regioes",[{x,y,type:"bar",marker:{color:corAtual()},text:y.map(v=>fmt(v)),textposition:"auto"}],"Índice médio de vulnerabilidade por região","Região","Índice (0–100)");
+}
+function graficoVulnerabilidade(a){
+  const x=a.map(d=>{let v=Number(d.indice_vulnerabilidade_medio);return Number.isFinite(v)?(v<=1?v*100:v):NaN});
+  const y=a.map(d=>Number(d.pct_sem_internet)),text=a.map(d=>`${d.nome_municipio} (${d.uf})`);
+  plot("vulnerabilidade",[{x,y,text,mode:"markers",type:"scatter",marker:{size:7,color:corAtual()},hovertemplate:"%{text}<br>Vulnerabilidade: %{x:.1f}<br>Sem internet: %{y:.1f}%<extra></extra>"}],"Vulnerabilidade × acesso à internet","Índice de vulnerabilidade","Sem internet (%)");
+}
+function graficoInternet(a){
+  const x=a.map(d=>Number(d.pct_sem_internet)),y=a.map(d=>Number(d.nota_media_geral)),text=a.map(d=>`${d.nome_municipio} (${d.uf})`);
+  plot("internet",[{x,y,text,mode:"markers",type:"scatter",marker:{size:7,color:corAtual()},hovertemplate:"%{text}<br>Sem internet: %{x:.1f}%<br>Média geral: %{y:.1f}<extra></extra>"}],"Acesso à internet × média geral","Sem internet (%)","Média geral");
+}
+function graficoPublica(a){
+  const x=a.map(d=>Number(d.pct_escola_publica)),y=a.map(d=>Number(d.nota_media_geral)),text=a.map(d=>`${d.nome_municipio} (${d.uf})`);
+  plot("publica",[{x,y,text,mode:"markers",type:"scatter",marker:{size:7,color:corAtual()},hovertemplate:"%{text}<br>Escola pública: %{x:.1f}%<br>Média geral: %{y:.1f}<extra></extra>"}],"Participação da rede pública × média geral","Escola pública (%)","Média geral");
+}
+function graficoDistribuicao(a){
+  const x=a.map(d=>Number(d.pct_pais_baixa_escolaridade)).filter(Number.isFinite);
+  plot("distribuicao",[{x,type:"histogram",nbinsx:20,marker:{color:corAtual()}}],"Distribuição do indicador de baixa escolaridade dos pais","Pais com baixa escolaridade (%)","Municípios");
+}
+function atualizar(){
+  const a=aplicarFiltros();
+  atualizarKPIs(a);graficoIndicadores(a);graficoRegioes(a);graficoVulnerabilidade(a);graficoInternet(a);graficoPublica(a);graficoDistribuicao(a);
+}
+function resetar(){document.getElementById("regiao").value="";document.getElementById("uf").value="";atualizar()}
+async function iniciar(){
+  try{
+    const r=await fetch("dados/tratado/tabela_municipio_final.csv");if(!r.ok)throw Error("CSV não encontrado");
+    dados=parseCSV(await r.text());preencherFiltros();atualizar();
+  }catch(e){
+    document.querySelector(".wrap").innerHTML=`<div class="error"><h2>Não foi possível carregar a base.</h2>
+    <p>Verifique se <strong>tabela_municipio_final.csv</strong> está em dados/tratado/.</p>
+    <p>Execute na pasta do projeto: <code>python3 -m http.server 8080</code></p>
+    <p>Depois acesse <code>http://localhost:8080/socioeconomico.html</code>.</p></div>`;
+  }
+}
+iniciar();
+</script>
+</body>
+</html>

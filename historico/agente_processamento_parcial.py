@@ -1,19 +1,30 @@
 # =============================================================
-# agente.py — Agente Consultor Estratégico Educacional (VERSÃO NVIDIA NIM REGULARIZADA)
+# agente.py — Agente Consultor Estratégico Educacional (VERSÃO CSV)
 #
 # Recebe o perfil socioeconômico de um município diretamente de um
 # arquivo .csv (tabela_municipio_final.csv) gerado pelo grupo,
-# e consulta a API oficial da NVIDIA NIM para gerar recomendações.
+# e consulta o IBM watsonx.ai para gerar recomendações estratégicas.
 # =============================================================
 
 import os
+import time
 import warnings
 import pandas as pd
-from dotenv import load_dotenv
-from openai import OpenAI
 
-# Suprime warnings informativos
-warnings.filterwarnings("ignore", category=UserWarning)
+# Suprime warnings informativos do watsonx
+warnings.filterwarnings("ignore", category=UserWarning, module="ibm_watsonx_ai")
+
+from dotenv import load_dotenv
+from ibm_watsonx_ai.credentials import Credentials
+from ibm_watsonx_ai.foundation_models import ModelInference
+from ibm_watsonx_ai.wml_client_error import ApiRequestFailure
+
+import config
+
+# Configurações de Retentativa da API
+_MAX_TENTATIVAS = 10
+_ESPERA_INICIAL = 15
+_ESPERA_MAXIMA  = 60
 
 # ------------------------------------------------------------------
 # Guardrail Nível 1 — Validação Local de Escopo
@@ -52,9 +63,9 @@ def _esta_no_escopo(pergunta: str) -> bool:
     return any(palavra in pergunta_lower for palavra in _PALAVRAS_ESCOPO)
 
 # ------------------------------------------------------------------
-# Mecanismo de Leitura Local do CSV
+# Mecanismo de Leitura Local do CSV (Compatibilidade de CPU)
 # ------------------------------------------------------------------
-def buscar_perfil_no_csv(nome_municipio: str, caminho_csv: str = "dados/tratado/tabela_municipio_final.csv") -> dict:
+def buscar_perfil_no_csv(nome_municipio: str, caminho_csv: str = "tabela_municipio_final.csv") -> dict:
     if not os.path.exists(caminho_csv):
         raise FileNotFoundError(f"Erro: O arquivo '{caminho_csv}' precisa estar nesta pasta.")
 
@@ -99,67 +110,23 @@ def buscar_perfil_no_csv(nome_municipio: str, caminho_csv: str = "dados/tratado/
 # ------------------------------------------------------------------
 # Prompts do Sistema e Formatação de Resumos
 # ------------------------------------------------------------------
-_SYSTEM_PROMPT = """Você é um Consultor Estratégico Educacional especialista em análise de dados educacionais e indicadores socioeconômicos do ENEM.
+_SYSTEM_PROMPT = """Você é um Consultor Estratégico Educacional especialista em dados do ENEM e em gestão escolar.
+Seu papel é ajudar gestores que desejam abrir uma nova instituição de ensino a decidir onde alocar seus recursos humanos.
 
-Seu papel é apoiar gestores que desejam abrir uma nova instituição de ensino, utilizando exclusivamente os dados fornecidos pelo sistema e as regras de decisão definidas abaixo.
+Você deve recomendar entre dois perfis de profissional:
+- PROFESSOR: especialista em conteúdo acadêmico. Indicado onde os alunos já têm estrutura (internet, renda adequada, apoio familiar com escolaridade) e o diferencial competitivo é o aprofundamento curricular.
+- TUTOR: profissional de suporte integral. Indicado onde os alunos enfrentam vulnerabilidade socioeconômica — precisam de acolhimento emocional, orientação metodológica e compensação pela falta de estrutura em casa.
 
-IMPORTANTE:
-- Diferencie claramente DADOS, INTERPRETAÇÕES e RECOMENDAÇÕES.
-- Nunca invente valores, percentuais, quantidades, metas ou estatísticas que não estejam presentes nos dados fornecidos.
-- Não transforme uma hipótese ou estimativa em um dado observado.
-- Não faça comparações com médias nacionais, estaduais ou regionais se esses valores não estiverem explicitamente disponíveis no contexto.
-- Quando os dados disponíveis não forem suficientes para uma recomendação quantitativa, informe explicitamente essa limitação.
-- Você pode fazer recomendações qualitativas baseadas nos indicadores disponíveis.
-- Qualquer proporção ou quantidade de professores/tutores somente pode ser apresentada como cálculo se houver dados suficientes para realizá-lo.
-- As regras de decisão abaixo são regras de negócio deste projeto e não devem ser apresentadas como evidência científica ou causalidade comprovada.
+Regras de decisão baseadas no score de vulnerabilidade socioeconômica (0 a 100):
+- Score ALTO (>= 65): priorize TUTORES. Esses alunos precisam de presença humana, vínculo e suporte antes do conteúdo.
+- Score BAIXO (<= 35): priorize PROFESSORES. Esses alunos têm base e estrutura; o diferencial é o conhecimento aprofundado.
+- Score MÉDIO (36 a 64): recomende COMBINAÇÃO, explicando qual perfil deve ser contratado primeiro e por quê, com base nos indicadores específicos do município.
 
-PERFIS PROFISSIONAIS:
-
-- PROFESSOR: profissional especializado no conteúdo acadêmico e no aprofundamento curricular.
-- TUTOR: profissional voltado ao acompanhamento, orientação metodológica, apoio à aprendizagem e suporte mais próximo ao aluno.
-
-REGRA DE DECISÃO DO PROJETO:
-
-A classificação abaixo é uma regra de negócio baseada no score de vulnerabilidade socioeconômica:
-
-- Score ALTO (>= 65): priorize TUTORES.
-- Score BAIXO (<= 35): priorize PROFESSORES.
-- Score MÉDIO (36 a 64): recomende uma combinação dos dois perfis e explique a prioridade utilizando os indicadores específicos do município.
-
-IMPORTANTE SOBRE O SCORE:
-
-O score orienta a recomendação, mas não prova que determinado profissional causará melhoria no desempenho dos alunos.
-
-Ao justificar a recomendação, considere os indicadores disponíveis:
-- percentual de alunos sem internet em casa;
-- percentual relacionado à renda familiar;
-- percentual de pais sem Ensino Médio completo;
-- nota média geral do ENEM;
-- nota média da redação;
-- quantidade de alunos analisados.
-
-Não atribua causalidade direta aos indicadores. Utilize expressões como:
-"os dados sugerem", "o indicador aponta", "o perfil observado indica" ou "dentro da regra de negócio adotada pelo projeto".
-
-FORMATO DA RESPOSTA:
-
-1. DIAGNÓSTICO DO PERFIL
-   Resuma objetivamente o que os dados revelam sobre o município.
-
-2. RECOMENDAÇÃO PRINCIPAL
-   Indique qual perfil deve ser priorizado segundo a regra de negócio do projeto e explique o motivo.
-
-3. JUSTIFICATIVA POR INDICADOR
-   Explique como renda, acesso à internet, escolaridade dos pais e indicadores de desempenho contribuem para a análise.
-
-4. LIMITAÇÕES DA ANÁLISE
-   Informe quando os dados disponíveis não permitirem determinar quantidades, percentuais de contratação, impacto esperado ou relações causais.
-
-5. AÇÕES ESTRATÉGICAS SUGERIDAS
-   Apresente até 3 ações concretas e coerentes com os dados disponíveis.
-
-Nunca apresente números que não possam ser calculados diretamente a partir dos dados fornecidos.
-"""
+Formato da sua resposta (sempre em português):
+1. DIAGNÓSTICO DO PERFIL: resumo do que os dados revelam sobre o município.
+2. RECOMENDAÇÃO PRINCIPAL: qual perfil contratar prioritariamente e por quê.
+3. JUSTIFICATIVA POR INDICADOR: explique como cada indicador (renda, internet, escolaridade dos pais) influencia a decisão.
+4. AÇÕES ESTRATÉGICAS SUGERIDAS: 3 ações concretas que o gestor deve tomar ao abrir a instituição nesse município."""
 
 def _resumo_perfil(perfil: dict) -> str:
     return (
@@ -174,25 +141,38 @@ def _resumo_perfil(perfil: dict) -> str:
     )
 
 # ------------------------------------------------------------------
-# Classe Principal do Agente (NVIDIA NIM Padrão Aberto)
+# Classe Principal do Agente
 # ------------------------------------------------------------------
 class AgenteConsultor:
     def __init__(self):
         load_dotenv()
-        self._api_key = os.getenv("NVIDIA_API_KEY")
-        if not self._api_key:
-            raise EnvironmentError("Chave NVIDIA_API_KEY não encontrada no arquivo .env.")
+        self._api_key    = os.getenv("WATSONX_API_KEY")
+        self._project_id = os.getenv("WATSONX_PROJECT_ID")
+        self._url        = os.getenv("WATSONX_URL", "https://ibm.com")
 
-        # Endpoint canônico de inferência para compatibilidade OpenAI-NVIDIA
-        self._client = OpenAI(
-            base_url="https://integrate.api.nvidia.com/v1",
-            api_key=self._api_key
-        )
+        if not self._api_key or not self._project_id:
+            raise EnvironmentError("Credenciais não encontradas no arquivo .env.")
+
+        self._chat_params = {
+            "max_tokens":         config.WATSONX_MAX_NEW_TOKENS,
+            "temperature":        config.WATSONX_TEMPERATURE,
+            "repetition_penalty": 1.1
+        }
+
+        self._model = None
         self._historico = []
         self._perfil_ativo = None
 
-        # Usamos o modelo padrão estável do catálogo para chamadas directas
-        self._model_id = "openai/gpt-oss-20b"
+    def _get_model(self) -> ModelInference:
+        if self._model is None:
+            credentials = Credentials(url=self._url, api_key=self._api_key)
+            self._model = ModelInference(
+                model_id=config.WATSONX_MODEL_ID,
+                credentials=credentials,
+                project_id=self._project_id,
+                params=self._chat_params
+            )
+        return self._model
 
     def iniciar_sessao(self, nome_municipio: str):
         perfil_mapeado = buscar_perfil_no_csv(nome_municipio)
@@ -214,22 +194,10 @@ class AgenteConsultor:
 
         self._historico.append({"role": "user", "content": pergunta})
 
+        # Montagem simples do texto para o prompt
+        prompt_completo = ""
+        for m in self._historico:
+            prompt_completo += f"\n[{m['role'].upper()}]: {m['content']}\n"
+        prompt_completo += "\n[ASSISTANT]: "
+
         try:
-            # Requisição direta estruturada
-            completion = self._client.chat.completions.create(
-                model=self._model_id,
-                messages=self._historico,
-                temperature=0.2,
-                max_tokens=1024
-            )
-
-            resposta_texto = completion.choices[0].message.content.strip()
-            self._historico.append({"role": "assistant", "content": resposta_texto})
-            return resposta_texto
-
-        except Exception as e:
-            return f"❌ Erro na comunicação com o endpoint da NVIDIA NIM: {e}"
-
-    def limpar_historico(self):
-        self._historico = []
-        self._perfil_ativo = None

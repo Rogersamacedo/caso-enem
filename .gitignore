@@ -20,3 +20,14 @@ dist/
 build/
 .venv/
 venv/
+
+# =============================================================
+# Exceção: base municipal tratada do projeto
+# =============================================================
+!dados/
+!dados/tratado/
+!dados/tratado/tabela_municipio_final.csv
+!dados/tratado/tabela_municipio_final.parquet
+
+# Credenciais IBM antigas — não versionar
+.env_ibm

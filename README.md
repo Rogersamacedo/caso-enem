@@ -1,129 +1,66 @@
-# 🎓 Caso ENEM — Agente Consultor Estratégico
 
-> **Trilha 4: Agente Especialista** — IBM watsonx.ai
+# 🎓 Caso ENEM 2025 — Plataforma de Análise Socioeconômica e Agente Consultor Estratégico
 
-Solução em Python que analisa os microdados socioeconômicos do ENEM 2025 e gera recomendações estratégicas para gestores escolares através de um Agente Consultor powered by IBM watsonx.ai.
-
-## 🎯 Pergunta de Negócio
-
-> *"Onde o gestor deve investir: em **Professores** (conteúdo) ou em **Tutores** (suporte emocional e metodológico)?"*
-
-A resposta depende do perfil socioeconômico de cada município — e este projeto calcula isso automaticamente com base nos dados reais do ENEM.
+> Projeto de análise de dados educacionais que combina tratamento estatístico dos microdados do ENEM, dashboards interativos e um Agente Consultor Estratégico baseado em IA.
 
 ---
 
-## 🚀 Como Executar
+## 🎯 Visão geral
 
-### 1. Clone o repositório
-```bash
-git clone https://github.com/seu-usuario/caso_enem.git
-cd caso_enem
-```
+O projeto utiliza os microdados do **ENEM 2025** como fonte para construir uma camada de dados municipal tratada e agregada.
 
-### 2. Instale as dependências
-```bash
-pip install -r requirements.txt
-```
+A solução transforma um conjunto de dados de grande volume em uma base consolidada por município, permitindo realizar:
 
-### 3. Configure as credenciais
-```bash
-cp env.example .env
-# Edite o .env com suas credenciais IBM watsonx.ai
-```
+- análise de desempenho educacional;
+- análise de indicadores socioeconômicos;
+- análise estatística;
+- visualização interativa;
+- interpretação dos indicadores por meio de um Agente Consultor baseado em IA.
 
-### 4. Baixe os microdados
-Baixe o arquivo `PARTICIPANTES_XXXX.csv` em: https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/microdados/enem
-
-### 5. Execute
-
-```bash
-# Ranking geral de vulnerabilidade por município
-python3 main.py --amostra 100000
-
-# Recomendação estratégica para um município
-python3 main.py --amostra 100000 --municipio "Salvador"
-
-# Modo interativo — conversa livre com o agente
-python3 main.py --amostra 100000 --municipio "Salvador" --interativo
-
-# Usando outro caminho para os dados
-python3 main.py --dados /caminho/para/PARTICIPANTES_2025.csv --municipio "Recife"
-```
+A proposta é apoiar gestores na análise do contexto educacional e socioeconômico de municípios que possam receber uma nova instituição de ensino.
 
 ---
 
-## 📊 Dashboard Visual
+## 💼 Pergunta de negócio
 
-Abra `index.html` no navegador para acessar:
-- 📊 **Dashboard Estratégico** — gráficos, rankings e tabelas
-- 🗺️ **Mapa de Calor** — vulnerabilidade por UF, interativo
+> **Onde o gestor deve priorizar investimento: em Professores ou em Tutores?**
 
----
+O projeto utiliza o perfil socioeconômico e educacional observado no município como contexto para uma regra de decisão definida pelo projeto.
 
-## 🏗️ Estrutura do Projeto
+### Perfis considerados
 
-```
-caso_enem/
-├── .env               # Credenciais (NÃO versionado)
-├── env.example        # Template das credenciais
-├── requirements.txt   # Dependências Python
-├── config.py          # Constantes e parâmetros
-├── analise.py         # ETL + score de vulnerabilidade
-├── agente.py          # Agente IBM watsonx.ai
-├── main.py            # Ponto de entrada (CLI)
-├── index.html         # Menu visual
-├── dashboard.html     # Dashboard com gráficos
-└── mapa.html          # Mapa interativo do Brasil
-```
+**Professor**
+
+Profissional especializado no conteúdo acadêmico e no aprofundamento curricular.
+
+**Tutor**
+
+Profissional voltado ao acompanhamento, orientação metodológica, apoio à aprendizagem e suporte mais próximo ao aluno.
+
+> **Importante:** a recomendação produzida pelo agente é uma regra de negócio do projeto. Ela não representa evidência científica de causalidade nem afirma que determinado profissional produzirá, por si só, melhoria no desempenho dos alunos.
 
 ---
 
-## 📐 Lógica do Score de Vulnerabilidade
+# 🏗️ Arquitetura da solução
 
-| Indicador | Variável ENEM 2025 | Peso |
-|---|---|---|
-| Renda familiar baixa (≤ 1 salário mínimo) | `Q007` faixas A/B | 40% |
-| Sem acesso à internet wi-fi em casa | `Q020` = A (Não) | 30% |
-| Pais sem Ensino Médio completo | `Q001`/`Q002` faixas A-E | 30% |
-
-**Classificação:**
-- Score ≥ 65 → Perfil **Alto** → Recomendação: **TUTOR**
-- Score ≤ 35 → Perfil **Baixo** → Recomendação: **PROFESSOR**
-- Score 36–64 → Perfil **Médio** → Recomendação: **COMBINAÇÃO**
-
----
-
-## 🤖 Modelo de IA
-
-- **Plataforma:** IBM watsonx.ai
-- **Modelo:** `mistralai/mistral-small-3-1-24b-instruct-2503`
-- **API:** `/ml/v1/text/chat`
-- **Retry automático:** até 10 tentativas com backoff exponencial (máx. 60s)
-- **Guardrail:** validação local de escopo antes de chamar a API
-
----
-
-## 📋 Variáveis de Ambiente
-
-```env
-WATSONX_API_KEY=sua_api_key_aqui
-WATSONX_PROJECT_ID=seu_project_id_aqui
-WATSONX_URL=https://us-south.ml.cloud.ibm.com
-```
-
----
-
-## 📦 Dependências
-
-```
-pandas>=2.2.2
-python-dotenv>=1.0.1
-ibm-watsonx-ai>=1.1.2
-```
-
----
-
-## 📚 Fonte dos Dados
-
-- **Microdados ENEM 2025** — Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira (INEP)
-- Dataset: 4,8 milhões de participantes · 27 UFs · 5.570 municípios
+```text
+                 MICRODADOS ENEM 2025
+                  ~4,8 milhões de
+                     registros
+                         │
+                         ▼
+              Tratamento e agregação
+                   estatística
+                         │
+                         ▼
+              BASE MUNICIPAL TRATADA
+                 1.805 municípios
+                    25 variáveis
+                         │
+              ┌──────────┼──────────┐
+              ▼          ▼          ▼
+         Dashboard   Estatística  Agente IA
+              │          │          │
+              ▼          ▼          ▼
+        Visualização   Análise   Diagnóstico
+                                  e recomendação
